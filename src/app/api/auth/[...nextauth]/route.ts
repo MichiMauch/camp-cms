@@ -1,9 +1,10 @@
-import NextAuth from "next-auth";
-import CredentialsProvider from "next-auth/providers/credentials";
-import { db } from "@/lib/turso"; // Turso-Datenbankverbindung importieren
-import bcrypt from "bcrypt"; // bcrypt für Passwortvergleich importieren
+import NextAuth from "next-auth"
+import type { NextAuthOptions } from "next-auth"
+import CredentialsProvider from "next-auth/providers/credentials"
+import { db } from "@/lib/turso"
+import bcrypt from "bcrypt"
 
-export const authOptions = {
+export const authOptions: NextAuthOptions = {
   providers: [
     CredentialsProvider({
       name: "Credentials",
@@ -12,64 +13,58 @@ export const authOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(credentials) {
-        console.log("Authorize called with:", credentials); // Debugging
-
-        if (!credentials) {
-          console.log("No credentials provided");
-          return null;
+        if (!credentials?.email || !credentials?.password) {
+          console.log("Missing credentials")
+          return null
         }
 
         try {
-          // Datenbankabfrage, um Benutzer mit der angegebenen E-Mail zu finden
           const result = await db.execute({
             sql: "SELECT * FROM users WHERE email = ? LIMIT 1",
             args: [credentials.email],
-          });
+          })
 
-          const user = result.rows[0];
+          const user = result.rows[0]
 
           if (!user) {
-            console.log("User not found");
-            return null;
+            console.log("User not found")
+            return null
           }
 
-          // Passwortüberprüfung mit bcrypt
           if (!user.password) {
-            console.log("User password is null");
-            return null;
+            console.log("User password is null")
+            return null
           }
 
-          const isPasswordValid = await bcrypt.compare(
-            credentials.password,
-            user.password.toString()
-          );
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password.toString())
 
           if (!isPasswordValid) {
-            console.log("Invalid password");
-            return null;
+            console.log("Invalid password")
+            return null
           }
 
-          console.log("User authenticated:", user);
           return {
-            id: user.id ? user.id.toString() : "",
-            name: user.name ? user.name.toString() : "",
-            email: user.email ? user.email.toString() : "",
-          }; // Rückgabe des Benutzers bei erfolgreicher Authentifizierung
+            id: user.id?.toString() ?? "",
+            name: user.name?.toString() ?? "",
+            email: user.email?.toString() ?? "",
+          }
         } catch (error) {
-          console.error("Database error:", error);
-          return null;
+          console.error("Database error:", error)
+          return null
         }
       },
     }),
   ],
   pages: {
-    signIn: "/login", // Redirect to login page on auth errors
+    signIn: "/login",
+  },
+  session: {
+    strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: true, // Enable debugging
-};
+  debug: process.env.NODE_ENV === "development",
+}
 
-// Wichtig: Exportiere GET und POST
-const handler = NextAuth(authOptions);
+const handler = NextAuth(authOptions)
+export { handler as GET, handler as POST }
 
-export { handler as GET, handler as POST };
