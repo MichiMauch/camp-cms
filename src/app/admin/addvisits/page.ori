@@ -1,0 +1,290 @@
+"use client";
+
+import { useState } from "react";
+import exifr from "exifr";
+import ExifDataDisplay from "./_components/ExifDataDisplay";
+import SaveDataButton from "./_components/SaveDataButton";
+
+export default function UploadVisitPage() {
+  const [exifData, setExifData] = useState<{
+    modifyDate: string;
+    gpsAltitude: number;
+    latitude: number;
+    longitude: number;
+    address?: {
+      display_name: string;
+      tourism?: string;
+      village?: string;
+      country?: string;
+      country_code?: string;
+      [key: string]: unknown;
+    };
+  } | null>(null);
+  const [error, setError] = useState("");
+  const [endDate, setEndDate] = useState<string>(() => {
+    const today = new Date();
+    const day = String(today.getDate()).padStart(2, "0");
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const year = today.getFullYear();
+    return `${day}.${month}.${year}`;
+  });
+  const [fileName, setFileName] = useState<string>("");
+
+  const fetchAddress = async (latitude: number, longitude: number) => {
+    try {
+      console.log("Fetching address for coordinates:", { latitude, longitude });
+      const response = await fetch(
+        `/api/nominatim?latitude=${latitude}&longitude=${longitude}`
+      );
+      if (!response.ok) {
+        throw new Error("Fehler bei der Nominatim-API-Anfrage.");
+      }
+      const data = await response.json();
+      console.log("Fetched address:", data);
+      return data;
+    } catch (err) {
+      console.error(err);
+      return "Fehler bei der Adresse.";
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
+  const generateFileName = (name: string, date: string) => {
+    const formattedName = name.toLowerCase().replace(/\s+/g, "-");
+    const formattedDate = date.replace(/\./g, "-");
+    return `${formattedName}-${formattedDate}`;
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setError("");
+    setExifData(null);
+    const file = event.target.files?.[0];
+    if (file) {
+      try {
+        const exif = await exifr.parse(file);
+        const latitude = exif?.latitude || exif?.GPSLatitude;
+        const longitude = exif?.longitude || exif?.GPSLongitude;
+
+        if (!latitude || !longitude) {
+          setError("Keine gültigen GPS-Daten gefunden.");
+          return;
+        }
+
+        const modifyDate =
+          exif?.ModifyDate || exif?.DateTimeOriginal
+            ? formatDate(
+                new Date(exif.ModifyDate || exif.DateTimeOriginal).toISOString()
+              )
+            : "Nicht verfügbar";
+
+        const gpsAltitude =
+          exif?.GPSAltitude !== undefined ? exif.GPSAltitude : 0;
+
+        const address = await fetchAddress(latitude, longitude);
+
+        console.log("Address:", address);
+
+        const newFileName = generateFileName(
+          address.address?.tourism || "unknown",
+          modifyDate
+        );
+
+        setExifData({
+          modifyDate,
+          gpsAltitude,
+          latitude,
+          longitude,
+          address: {
+            display_name: address.display_name,
+            tourism: address.address?.tourism,
+            village: address.address?.village,
+            country: address.address?.country,
+            country_code: address.address?.country_code,
+          },
+        });
+        setFileName(newFileName);
+      } catch (err) {
+        setError("Fehler beim Verarbeiten der Daten.");
+        console.error(err);
+      }
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (exifData) {
+      setExifData({
+        ...exifData,
+        [e.target.name]: e.target.value,
+      });
+    }
+  };
+
+  const handleAddressInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (exifData && exifData.address) {
+      setExifData({
+        ...exifData,
+        address: {
+          ...exifData.address,
+          [e.target.name]: e.target.value,
+        },
+      });
+    }
+  };
+
+  return (
+    <div className="container mx-auto p-8">
+      <h1 className="text-2xl font-bold mb-4">Besuch erfassen</h1>
+
+      <input
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="mb-4"
+      />
+
+      {error && <p className="text-red-500">{error}</p>}
+
+      {exifData && (
+        <div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Datei
+            </label>
+            <input
+              type="text"
+              name="fileName"
+              value={fileName}
+              onChange={(e) => setFileName(e.target.value)}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Datum von
+            </label>
+            <input
+              type="text"
+              name="modifyDate"
+              value={exifData.modifyDate}
+              onChange={handleInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Datum bis
+            </label>
+            <input
+              type="text"
+              name="endDate"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Höhe
+            </label>
+            <input
+              type="number"
+              name="gpsAltitude"
+              value={exifData.gpsAltitude}
+              onChange={handleInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Breitengrad
+            </label>
+            <input
+              type="number"
+              name="latitude"
+              value={exifData.latitude}
+              onChange={handleInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Längengrad
+            </label>
+            <input
+              type="number"
+              name="longitude"
+              value={exifData.longitude}
+              onChange={handleInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Name
+            </label>
+            <input
+              type="text"
+              name="tourism"
+              value={exifData.address?.tourism || ""}
+              onChange={handleAddressInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Location
+            </label>
+            <input
+              type="text"
+              name="village"
+              value={exifData.address?.village || ""}
+              onChange={handleAddressInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Country
+            </label>
+            <input
+              type="text"
+              name="country"
+              value={exifData.address?.country || ""}
+              onChange={handleAddressInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-gray-700">
+              Country Code
+            </label>
+            <input
+              type="text"
+              name="country_code"
+              value={exifData.address?.country_code || ""}
+              onChange={handleAddressInputChange}
+              className="mt-1 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md"
+            />
+          </div>
+          <SaveDataButton
+            exifData={exifData}
+            endDate={endDate}
+            fileName={fileName}
+            setError={setError}
+          />
+        </div>
+      )}
+
+      {exifData && <ExifDataDisplay exifData={exifData} />}
+    </div>
+  );
+}

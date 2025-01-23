@@ -1,0 +1,23 @@
+
+> camp-cms@0.1.0 dev
+> next dev
+
+   ▲ Next.js 15.1.3
+   - Local:        http://localhost:3000
+   - Network:      http://10.30.232.68:3000
+   - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 1321ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 948ms (579 modules)
+ GET /api/iss 404 in 1223ms
+ ✓ Compiled in 165ms (565 modules)
+ GET /api/iss 404 in 199ms
+ GET /api/iss 404 in 19ms
+ GET /api/iss 404 in 11ms
+ ✓ Compiled in 132ms (293 modules)
+ GET /api/iss 404 in 94ms
+ GET /api/iss 404 in 20ms
+ GET /api/iss 404 in 17ms
+ GET /api/iss 404 in 9ms
