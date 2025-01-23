@@ -1,6 +1,6 @@
-import React from "react";
+import type React from "react";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import Sidebar from "./_components/Sidebar";
 import Link from "next/link";
 import { Toaster } from "@/components/ui/toaster";
@@ -12,11 +12,9 @@ export default async function AdminLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // Überprüfe die Authentifizierung
   const session = await getServerSession(authOptions);
 
   if (!session) {
-    // Wenn nicht eingeloggt, zeige eine Fehlermeldung und einen Link zur Login-Seite
     return (
       <html lang="de">
         <body className="h-screen bg-background-custom">
@@ -36,18 +34,15 @@ export default async function AdminLayout({
     );
   }
 
-  // Wenn eingeloggt, zeige das Admin-Layout
   return (
     <html lang="de">
       <body className="h-screen bg-background-custom">
         <Providers>
           <div className="flex h-screen">
-            {/* Sidebar links */}
             <div className="w-72 flex-shrink-0 bg-gray-900">
               <Sidebar />
             </div>
-            {/* Hauptinhalt */}
-            <div className="flex-1 overflow-auto  bg-[#1E2D2F] p-6">
+            <div className="flex-1 overflow-auto bg-[#1E2D2F] p-6">
               {children}
             </div>
             <Toaster />

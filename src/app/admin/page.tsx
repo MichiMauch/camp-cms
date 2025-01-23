@@ -1,5 +1,5 @@
 import { getServerSession } from "next-auth";
-import { authOptions } from "../api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 import { VisitedPlacesMap } from "@/components/VisitedPlacesMap";
 import {
   TotalVisitedPlaces,
@@ -20,7 +20,6 @@ export default async function Admin() {
 
   return (
     <div className="space-y-6">
-      {/* Willkommensgruß und Quick Actions */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
           <h1 className="font-crete text-2xl font-bold tracking-tight">
@@ -32,16 +31,13 @@ export default async function Admin() {
         </div>
       </div>
 
-      {/* Statistik-Karten */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <TotalVisits />
         <TotalVisitedPlaces />
       </div>
 
-      {/* Leaflet-Karte */}
       <VisitedPlacesMap />
 
-      {/* Karten pro Land */}
       <CampsitesByCountry />
     </div>
   );
