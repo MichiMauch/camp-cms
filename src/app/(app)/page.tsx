@@ -37,15 +37,16 @@ export default function Page() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
-      <div className="max-w-2xl mx-auto bg-white rounded-xl shadow-md p-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          Willkommen bei Camp CMS
-        </h1>
-        <p className="text-gray-600">
-          Diese Seite testet die Tailwind CSS Integration.
-        </p>
-      </div>
-    </main>
+    <div className="min-h-screen bg-[#1E2D2F] pb-10 pt-8">
+      <MainNav />
+      <HeroSection />
+      {years.map((year) => (
+        <ScrollSection
+          key={year}
+          title={`Besuche ${year}`}
+          year={year.toString()}
+        />
+      ))}
+    </div>
   );
 }
