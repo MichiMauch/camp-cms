@@ -10,11 +10,15 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log("Sende Login-Daten:", { email, password });
+
     const result = await signIn("credentials", {
       email,
       password,
       redirect: false,
     });
+
+    console.log("Ergebnis von signIn:", result);
 
     if (result?.error) {
       setError("Ungültige Anmeldedaten");

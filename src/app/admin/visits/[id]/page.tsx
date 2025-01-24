@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { use } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -67,7 +66,7 @@ export default function VisitDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const params = use(paramsPromise);
+  const [params, setParams] = useState<{ id: string } | null>(null);
   const router = useRouter();
   const [visit, setVisit] = useState<Visit | null>(null);
   const [editedVisit, setEditedVisit] = useState<Visit | null>(null);
@@ -79,7 +78,16 @@ export default function VisitDetailPage({
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
+    async function fetchParams() {
+      const resolvedParams = await paramsPromise;
+      setParams(resolvedParams);
+    }
+    fetchParams();
+  }, [paramsPromise]);
+
+  useEffect(() => {
     async function fetchVisitDetails() {
+      if (!params) return;
       try {
         const response = await fetch(`/api/visits/${params.id}`);
         if (!response.ok) {
@@ -98,13 +106,14 @@ export default function VisitDetailPage({
     }
 
     fetchVisitDetails();
-  }, [params.id]);
+  }, [params]);
 
   const handleSave = async () => {
     if (!editedVisit) return;
 
     setSaving(true);
     try {
+      if (!params) throw new Error("Params are null");
       const response = await fetch(`/api/visits/${params.id}`, {
         method: "PUT",
         headers: {
@@ -140,6 +149,7 @@ export default function VisitDetailPage({
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
+      if (!params) throw new Error("Params are null");
       const response = await fetch(`/api/visits?id=${params.id}`, {
         method: "DELETE",
       });
@@ -234,7 +244,7 @@ export default function VisitDetailPage({
       </div>
 
       <Tabs defaultValue="details">
-        <TabsList>
+        <TabsList className="text-black">
           <TabsTrigger value="details">Details</TabsTrigger>
           <TabsTrigger value="campsite">Campingplatz</TabsTrigger>
           <TabsTrigger value="media">Medien</TabsTrigger>
