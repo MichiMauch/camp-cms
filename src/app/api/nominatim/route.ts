@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
       ...data,
       state: address.state || address.county || ''
     };
-    return NextResponse.json(result, { status: 200 });
+    return NextResponse.json([result], { status: 200 }); // Rückgabe als Array
   } catch (err) {
     console.error(err);
     return NextResponse.json({ error: 'Fehler bei der Nominatim-API-Anfrage.' }, { status: 500 });

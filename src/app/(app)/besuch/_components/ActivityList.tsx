@@ -1,80 +1,219 @@
-import React from "react";
-import { ChevronDown } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectLabel,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import styles from "./ActivityList.module.css";
 
 interface Activity {
   title: string;
-  distance: string;
+  description: string;
   type: string;
   gradient: string;
+  from?: string;
+  to?: string;
+  distance?: string;
+  route?: string;
+  website?: string;
 }
 
-const activities: Activity[] = [
-  {
-    title: "Wandern im Schwarzwald",
-    distance: "2.5 km",
-    type: "Wandern",
-    gradient: "from-green-500/20 to-emerald-500/20",
-  },
-  {
-    title: "Titisee Bootsverleih",
-    distance: "4 km",
-    type: "Wassersport",
-    gradient: "from-blue-500/20 to-cyan-500/20",
-  },
-  {
-    title: "Feldberg Aussichtspunkt",
-    distance: "8 km",
-    type: "Aussicht",
-    gradient: "from-orange-500/20 to-amber-500/20",
-  },
-  {
-    title: "Ravennaschlucht",
-    distance: "12 km",
-    type: "Wandern",
-    gradient: "from-green-500/20 to-emerald-500/20",
-  },
-  {
-    title: "Hochseilgarten Titisee",
-    distance: "3.5 km",
-    type: "Abenteuer",
-    gradient: "from-red-500/20 to-rose-500/20",
-  },
-  {
-    title: "Schwarzwälder Skimuseum",
-    distance: "5 km",
-    type: "Kultur",
-    gradient: "from-purple-500/20 to-violet-500/20",
-  },
-];
+const routeMapping: { [key: string]: string } = {
+  attraction: "Attraktion",
+  foot: "Wanderung",
+  bicycle: "Biketour",
+};
 
-const ActivityList: React.FC = () => {
+const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
+  latitude,
+  longitude,
+}) => {
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [radius, setRadius] = useState("5000");
+  const [typeFilter, setTypeFilter] = useState<string | null>(null);
+
+  // Aktivitäten vom API holen
+  useEffect(() => {
+    async function fetchActivities() {
+      if (!latitude || !longitude) {
+        setError("Koordinaten fehlen.");
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const response = await fetch(
+          `/api/overpass?latitude=${latitude}&longitude=${longitude}&radius=${radius}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch activities");
+        }
+        const data = await response.json();
+        console.log("Fetched data from Overpass API:", data);
+
+        if (!Array.isArray(data.elements)) {
+          throw new Error("Unexpected response format");
+        }
+
+        const overpassActivities = data.elements.map((item: any) => ({
+          title: item.tags.name || "Unbenannte Attraktion",
+          description: item.tags.description || "",
+          type:
+            item.tags.tourism === "attraction"
+              ? "attraction"
+              : item.tags.route || "attraction",
+          gradient: "from-gray-500/20 to-gray-500/20",
+          from: item.tags.from || "",
+          to: item.tags.to || "",
+          distance: item.tags.distance || "",
+          route: item.tags.route || "",
+          website: item.tags.website || "",
+        }));
+
+        setActivities(overpassActivities);
+      } catch (err) {
+        setError("Fehler beim Abrufen der Aktivitäten.");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchActivities();
+  }, [latitude, longitude, radius]);
+
+  // Filter anwenden
+  const filteredActivities = activities.filter(
+    (activity) =>
+      typeFilter === null ||
+      activity.type === typeFilter ||
+      activity.route === typeFilter
+  );
+
+  if (loading) {
+    return <div>Lädt...</div>;
+  }
+
+  if (error) {
+    return <div>{error}</div>;
+  }
+
+  // Hilfsfunktionen für Klasse
+  function getDefaultBgClass(routeType: string | undefined) {
+    switch (routeType) {
+      case "foot":
+        return styles.foot;
+      case "bicycle":
+        return styles.bicycle;
+      default:
+        // Fallback = attraction
+        return styles.attraction;
+    }
+  }
+
+  function getHoverClass(routeType: string | undefined) {
+    switch (routeType) {
+      case "foot":
+        return styles.hoverGradientFoot;
+      case "bicycle":
+        return styles.hoverGradientBicycle;
+      default:
+        return styles.hoverGradientAttraction;
+    }
+  }
+
   return (
-    <div className="col-span-12 bg-card rounded-[2rem] border p-8 shadow-lg">
-      <h2 className="text-2xl font-semibold mb-6">
-        Aktivitäten in der Umgebung
-      </h2>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {activities.map((activity, index) => (
-          <div
-            key={index}
-            className={`group relative p-6 rounded-2xl bg-gradient-to-br ${activity.gradient} 
-              hover:scale-[1.02] transition-all cursor-pointer`}
+    <div className="col-span-12 bg-card rounded-[2rem] border p-8 shadow-lg relative z-10">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-semibold">Aktivitäten in der Umgebung</h2>
+
+        {/* Filter Dropdowns */}
+        <div className="flex gap-4">
+          <Select value={radius} onValueChange={setRadius}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Entfernung" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Entfernung</SelectLabel>
+                <SelectItem value="1000">1 km</SelectItem>
+                <SelectItem value="5000">5 km</SelectItem>
+                <SelectItem value="10000">10 km</SelectItem>
+                <SelectItem value="25000">25 km</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={typeFilter || "all"}
+            onValueChange={(value) =>
+              setTypeFilter(value === "all" ? null : value)
+            }
           >
-            <div className="absolute top-3 right-3">
-              <ChevronDown className="h-5 w-5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Aktivitätstyp" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectGroup>
+                <SelectLabel>Aktivitätstyp</SelectLabel>
+                <SelectItem value="all">Alle Typen</SelectItem>
+                <SelectItem value="attraction">Attraktion</SelectItem>
+                <SelectItem value="foot">Wanderung</SelectItem>
+                <SelectItem value="bicycle">Biketour</SelectItem>
+              </SelectGroup>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
+      {/* Grid der Aktivitäten */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {filteredActivities.map((activity, index) => {
+          const routeType = activity.route || activity.type;
+
+          return (
+            <div
+              key={index}
+              className={`
+                group relative p-6 rounded-2xl hover:scale-[1.02]
+                transition-all cursor-pointer h-full text-black
+                ${getDefaultBgClass(routeType)} 
+                ${getHoverClass(routeType)}
+              `}
+            >
+              <div className="flex justify-between items-center mb-3 pr-6">
+                <h3 className="font-medium flex items-center">
+                  {activity.title}
+                  {activity.website && (
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  )}
+                </h3>
+                <Badge variant="secondary" className="font-normal">
+                  {routeType ? routeMapping[routeType] : "Unbekannt"}
+                </Badge>
+              </div>
+              <div className="flex flex-col justify-between items-start">
+                <span className="text-sm">
+                  {activity.from && activity.to && activity.distance
+                    ? `${activity.from} - ${activity.to}, ${activity.distance}km`
+                    : activity.description
+                    ? `${activity.description}${
+                        activity.distance ? `, ${activity.distance}km` : ""
+                      }`
+                    : ""}
+                </span>
+              </div>
             </div>
-            <h3 className="font-medium mb-3 pr-6">{activity.title}</h3>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-muted-foreground">
-                {activity.distance}
-              </span>
-              <Badge variant="secondary" className="font-normal">
-                {activity.type}
-              </Badge>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

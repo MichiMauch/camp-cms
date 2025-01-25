@@ -1,18 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Sun, Wind, Droplets, Sunrise, Sunset, Gauge } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import ReactAnimatedWeather from "react-animated-weather";
 
 interface WeatherDetailsProps {
-  temperature: number | null;
-  feelsLike: number | null;
-  windSpeed: number | null;
-  humidity: number | null;
-  pressure: number | null;
-  sunrise: string | null;
-  sunset: string | null;
-  weatherIcon: string | null;
-  weatherDescription: string | null;
+  latitude: number;
+  longitude: number;
 }
 
 const iconMapping: { [key: string]: string } = {
@@ -37,16 +30,59 @@ const iconMapping: { [key: string]: string } = {
 };
 
 const WeatherDetails: React.FC<WeatherDetailsProps> = ({
-  temperature,
-  feelsLike,
-  windSpeed,
-  humidity,
-  pressure,
-  sunrise,
-  sunset,
-  weatherIcon,
-  weatherDescription,
+  latitude,
+  longitude,
 }) => {
+  const [temperature, setTemperature] = useState<number | null>(null);
+  const [feelsLike, setFeelsLike] = useState<number | null>(null);
+  const [windSpeed, setWindSpeed] = useState<number | null>(null);
+  const [humidity, setHumidity] = useState<number | null>(null);
+  const [pressure, setPressure] = useState<number | null>(null);
+  const [sunrise, setSunrise] = useState<string | null>(null);
+  const [sunset, setSunset] = useState<string | null>(null);
+  const [weatherIcon, setWeatherIcon] = useState<string | null>(null);
+  const [weatherDescription, setWeatherDescription] = useState<string | null>(
+    null
+  );
+
+  useEffect(() => {
+    async function fetchWeather() {
+      if (!latitude || !longitude) return;
+      try {
+        const response = await fetch(
+          `/api/weather?lat=${latitude}&lon=${longitude}`
+        );
+        if (!response.ok) {
+          throw new Error("Failed to fetch weather data");
+        }
+        const data = await response.json();
+        setTemperature(parseFloat(data.main.temp.toFixed(1)));
+        setFeelsLike(parseFloat(data.main.feels_like.toFixed(1)));
+        setWindSpeed(data.wind.speed);
+        setHumidity(data.main.humidity);
+        setPressure(data.main.grnd_level);
+        setSunrise(
+          new Date(data.sys.sunrise * 1000).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+        setSunset(
+          new Date(data.sys.sunset * 1000).toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          })
+        );
+        setWeatherIcon(data.weather[0].icon);
+        setWeatherDescription(data.weather[0].description);
+      } catch (err) {
+        console.error("Fehler beim Abrufen der Wetterdaten:", err);
+      }
+    }
+
+    fetchWeather();
+  }, [latitude, longitude]);
+
   const icon = iconMapping[weatherIcon || ""] || "CLEAR_DAY";
 
   return (

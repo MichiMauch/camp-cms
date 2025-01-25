@@ -8,6 +8,26 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+
+/* ActivityList.module.css */
+.animateGradientX {
+  background-size: 200% 200%;
+  animation: gradientShift 3s ease-in-out infinite;
+}
+
+@keyframes gradientShift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+
 @layer base {
   :root {
     --background: 0 0% 100%;

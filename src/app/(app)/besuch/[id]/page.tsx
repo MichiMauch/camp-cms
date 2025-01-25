@@ -28,17 +28,6 @@ export default function CampingDetail({
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [temperature, setTemperature] = useState<number | null>(null);
-  const [feelsLike, setFeelsLike] = useState<number | null>(null);
-  const [windSpeed, setWindSpeed] = useState<number | null>(null);
-  const [humidity, setHumidity] = useState<number | null>(null);
-  const [pressure, setPressure] = useState<number | null>(null);
-  const [sunrise, setSunrise] = useState<string | null>(null);
-  const [sunset, setSunset] = useState<string | null>(null);
-  const [weatherIcon, setWeatherIcon] = useState<string | null>(null);
-  const [weatherDescription, setWeatherDescription] = useState<string | null>(
-    null
-  );
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -69,44 +58,6 @@ export default function CampingDetail({
 
     fetchLastVisit();
   }, [params]);
-
-  useEffect(() => {
-    async function fetchWeather() {
-      if (!lastVisit.latitude || !lastVisit.longitude) return;
-      try {
-        const response = await fetch(
-          `/api/weather?lat=${lastVisit.latitude}&lon=${lastVisit.longitude}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch weather data");
-        }
-        const data = await response.json();
-        setTemperature(parseFloat(data.main.temp.toFixed(1)));
-        setFeelsLike(parseFloat(data.main.feels_like.toFixed(1)));
-        setWindSpeed(data.wind.speed);
-        setHumidity(data.main.humidity);
-        setPressure(data.main.grnd_level);
-        setSunrise(
-          new Date(data.sys.sunrise * 1000).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        );
-        setSunset(
-          new Date(data.sys.sunset * 1000).toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })
-        );
-        setWeatherIcon(data.weather[0].icon);
-        setWeatherDescription(data.weather[0].description);
-      } catch (err) {
-        console.error("Fehler beim Abrufen der Wetterdaten:", err);
-      }
-    }
-
-    fetchWeather();
-  }, [lastVisit.latitude, lastVisit.longitude]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -156,15 +107,8 @@ export default function CampingDetail({
 
               {/* Wetter Container */}
               <WeatherDetails
-                temperature={temperature}
-                feelsLike={feelsLike}
-                windSpeed={windSpeed}
-                humidity={humidity}
-                pressure={pressure}
-                sunrise={sunrise}
-                sunset={sunset}
-                weatherIcon={weatherIcon}
-                weatherDescription={weatherDescription}
+                latitude={lastVisit.latitude}
+                longitude={lastVisit.longitude}
               />
 
               {/* Karte */}
@@ -175,7 +119,10 @@ export default function CampingDetail({
               </div>
 
               {/* Aktivitäten Container */}
-              <ActivityList />
+              <ActivityList
+                latitude={lastVisit.latitude}
+                longitude={lastVisit.longitude}
+              />
             </div>
           </div>
         </div>
