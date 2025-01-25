@@ -224,7 +224,7 @@ export default function VisitDetailPage({
     <div className="container mx-auto p-4 md:p-8 space-y-6">
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-creteround tracking-tight">
-          Besuchsdetails
+          Besuchsdetails für ID: {params?.id}
         </h1>
         <div className="flex gap-2">
           <Button onClick={handleSave} disabled={saving} className="w-[120px]">

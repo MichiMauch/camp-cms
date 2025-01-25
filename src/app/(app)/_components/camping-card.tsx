@@ -29,7 +29,7 @@ export default function CampingCard({
   const imageUrl = `${BASE_IMAGE_URL}${image}${DEFAULT_IMAGE_EXTENSION}`; // Baue den Bildpfad direkt
 
   return (
-    <Link href={`/entry/${id}`}>
+    <Link href={`/besuch/${id}`}>
       <motion.div
         className="group relative aspect-video w-[300px] cursor-pointer overflow-hidden rounded-lg md:w-[400px]"
         whileHover={{ scale: 1.05 }}

@@ -10,6 +10,10 @@ const nextConfig = {
         protocol: "https",
         hostname: "pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev",
       },
+      {
+        protocol: "https",
+        hostname: "unsplash.com", // Unsplash Domain hinzufügen
+      },
     ],
   },
 };
