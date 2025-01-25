@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { ExternalLink } from "lucide-react";
+import { ExternalLink, Loader, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import styles from "./ActivityList.module.css";
+import MapModal from "./MapModal";
 
 interface Activity {
   title: string;
@@ -22,6 +23,8 @@ interface Activity {
   distance?: string;
   route?: string;
   website?: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 const routeMapping: { [key: string]: string } = {
@@ -39,10 +42,14 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
   const [error, setError] = useState("");
   const [radius, setRadius] = useState("5000");
   const [typeFilter, setTypeFilter] = useState<string | null>(null);
+  const [selectedActivity, setSelectedActivity] = useState<Activity | null>(
+    null
+  );
 
   // Aktivitäten vom API holen
   useEffect(() => {
     async function fetchActivities() {
+      setLoading(true);
       if (!latitude || !longitude) {
         setError("Koordinaten fehlen.");
         setLoading(false);
@@ -76,6 +83,8 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
           distance: item.tags.distance || "",
           route: item.tags.route || "",
           website: item.tags.website || "",
+          latitude: item.lat,
+          longitude: item.lon,
         }));
 
         setActivities(overpassActivities);
@@ -97,14 +106,6 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
       activity.type === typeFilter ||
       activity.route === typeFilter
   );
-
-  if (loading) {
-    return <div>Lädt...</div>;
-  }
-
-  if (error) {
-    return <div>{error}</div>;
-  }
 
   // Hilfsfunktionen für Klasse
   function getDefaultBgClass(routeType: string | undefined) {
@@ -136,7 +137,10 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
         <h2 className="text-2xl font-semibold">Aktivitäten in der Umgebung</h2>
 
         {/* Filter Dropdowns */}
-        <div className="flex gap-4">
+        <div className="flex gap-4 items-center">
+          {loading && (
+            <Loader className="animate-spin h-6 w-6 text-muted-foreground" />
+          )}
           <Select value={radius} onValueChange={setRadius}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Entfernung" />
@@ -175,11 +179,16 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
       </div>
 
       {/* Grid der Aktivitäten */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative">
+        {loading && (
+          <div className="absolute inset-0 flex justify-center items-center bg-white bg-opacity-75 z-10 rounded-[1rem]">
+            <Loader className="animate-spin h-8 w-8 text-muted-foreground" />
+          </div>
+        )}
         {filteredActivities.map((activity, index) => {
           const routeType = activity.route || activity.type;
 
-          return (
+          const content = (
             <div
               key={index}
               className={`
@@ -188,10 +197,20 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
                 ${getDefaultBgClass(routeType)} 
                 ${getHoverClass(routeType)}
               `}
+              onClick={() => setSelectedActivity(activity)}
             >
               <div className="flex justify-between items-center mb-3 pr-6">
                 <h3 className="font-medium flex items-center">
                   {activity.title}
+                  <MapPin
+                    className="ml-2 h-4 w-4 cursor-pointer"
+                    onClick={(e) => {
+                      e.stopPropagation(); // Verhindert Event-Bubbling
+                      e.preventDefault();
+                      setSelectedActivity(activity);
+                    }}
+                  />
+
                   {activity.website && (
                     <ExternalLink className="ml-2 h-4 w-4" />
                   )}
@@ -213,8 +232,32 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
               </div>
             </div>
           );
+
+          return activity.website ? (
+            <a
+              key={index}
+              href={activity.website}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-full"
+            >
+              {content}
+            </a>
+          ) : (
+            content
+          );
         })}
       </div>
+
+      {selectedActivity && (
+        <MapModal
+          isOpen={!!selectedActivity}
+          onClose={() => setSelectedActivity(null)}
+          latitude={selectedActivity.latitude}
+          longitude={selectedActivity.longitude}
+          name={selectedActivity.title}
+        />
+      )}
     </div>
   );
 };

@@ -16,7 +16,7 @@
     /* etwas größere Farbunterschiede */
     background: linear-gradient(to right, #ff5700, #ff7a00, #ffb800);
     background-size: 300% 300%;
-    animation: gradientShift 4s ease-in-out infinite;
+    animation: gradientShift 3s ease-in-out infinite;
   }
   
   /* Hover-Animation für Wanderung */
@@ -24,7 +24,7 @@
     /* deutlichere Nuancen im Grün */
     background: linear-gradient(to right, #88af3a, #a2c84a, #c1e35e);
     background-size: 300% 300%;
-    animation: gradientShift 4s ease-in-out infinite;
+    animation: gradientShift 3s ease-in-out infinite;
   }
   
   /* Hover-Animation für Biketour */
@@ -32,7 +32,7 @@
     /* helleres, stärker differenziertes Blau */
     background: linear-gradient(to right, #70aee4, #99cff5, #c0e9ff);
     background-size: 300% 300%;
-    animation: gradientShift 4s ease-in-out infinite;
+    animation: gradientShift 3s ease-in-out infinite;
   }
   
   /* Keyframes für den animierten Verlauf */
