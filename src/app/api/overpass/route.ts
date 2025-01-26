@@ -4,7 +4,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const latitude = searchParams.get("latitude");
   const longitude = searchParams.get("longitude");
-  const radius = searchParams.get("radius") || "3000";
+  const radius = searchParams.get("radius") || "5000";
 
   if (!latitude || !longitude) {
     return NextResponse.json(
@@ -13,13 +13,17 @@ export async function GET(request: Request) {
     );
   }
 
-  // Erweiterte Overpass-Query: Attraktionen, Fahrradtouren und Wanderwege
+  // Erweiterte Overpass-Query: Attraktionen, Fahrradtouren, Wanderwege und Campingplätze
   const overpassQuery = `
     [out:json];
     (
       node["tourism"="attraction"](around:${radius},${latitude},${longitude});
       way["tourism"="attraction"](around:${radius},${latitude},${longitude});
       relation["tourism"="attraction"](around:${radius},${latitude},${longitude});
+
+      node["tourism"="caravan_site"](around:${radius},${latitude},${longitude});
+      way["tourism"="caravan_site"](around:${radius},${latitude},${longitude});
+      relation["tourism"="caravan_site"](around:${radius},${latitude},${longitude});
 
       relation["route"="bicycle"](around:${radius},${latitude},${longitude});
       relation["route"="foot"](around:${radius},${latitude},${longitude});

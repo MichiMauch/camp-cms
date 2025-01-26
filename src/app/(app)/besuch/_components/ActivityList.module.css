@@ -1,50 +1,68 @@
 /* Standard-Hintergründe (optional unverändert) */
 .attraction {
-    background-color: #ff6600;
-  }
+  background: linear-gradient(to top right, #ff8c4d, #ffffff);
+}
   
   .foot {
-    background-color: #99bc41;
+    background: linear-gradient(to top right, #a0c76b, #ffffff);
   }
   
   .bicycle {
-    background-color: #90bee9;
+    background: linear-gradient(to top right, #8fc4e8, #ffffff);
+  }
+
+  .caravanSite {
+    background: linear-gradient(to top right, #ffd24d, #ffe066, #ffffff);
   }
   
   /* Hover-Animation für Attraktion */
   .hoverGradientAttraction:hover {
-    /* etwas größere Farbunterschiede */
-    background: linear-gradient(to right, #ff5700, #ff7a00, #ffb800);
-    background-size: 300% 300%;
-    animation: gradientShift 3s ease-in-out infinite;
+  /* etwas weniger kräftige Farbunterschiede */
+  background: linear-gradient(to right, #ff8c4d, #ff9f66, #ffb380);
+  background-size: 300% 300%;
+  animation: gradientShift 3s ease-in-out infinite;
   }
   
   /* Hover-Animation für Wanderung */
   .hoverGradientFoot:hover {
-    /* deutlichere Nuancen im Grün */
-    background: linear-gradient(to right, #88af3a, #a2c84a, #c1e35e);
-    background-size: 300% 300%;
-    animation: gradientShift 3s ease-in-out infinite;
+  /* weniger kräftige Nuancen im Grün */
+  background: linear-gradient(to right, #a0c76b, #b5d47e, #c9e191);
+  background-size: 300% 300%;
+  animation: gradientShift 3s ease-in-out infinite;
   }
   
   /* Hover-Animation für Biketour */
   .hoverGradientBicycle:hover {
-    /* helleres, stärker differenziertes Blau */
-    background: linear-gradient(to right, #70aee4, #99cff5, #c0e9ff);
-    background-size: 300% 300%;
-    animation: gradientShift 3s ease-in-out infinite;
+  /* weniger kräftiges, differenziertes Blau */
+  background: linear-gradient(to right, #8fc4e8, #aadcf5, #c5f3ff);
+  background-size: 300% 300%;
+  animation: gradientShift 3s ease-in-out infinite;
+  }
+
+  /* Hover-Animation für Camping */
+  .hoverGradientCaravanSite:hover {
+  /* weniger kräftiges, differenziertes Gelb */
+  background: linear-gradient(to right, #ffd24d, #ffe066, #ffed80);
+  background-size: 300% 300%;
+  animation: gradientShift 3s ease-in-out infinite;
+  }
+
+  /* Hover-Animation mit Weiß für den Hintergrund */
+  .hoverGradientWhite:hover {
+  background: linear-gradient(to right, #ffffff, #f0f0f0, #e0e0e0);
+  background-size: 300% 300%;
+  animation: gradientShift 3s ease-in-out infinite;
   }
   
   /* Keyframes für den animierten Verlauf */
   @keyframes gradientShift {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
+  0% {
+    background-position: 0% 50%;
   }
-  
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+  }
