@@ -18,6 +18,7 @@ interface LeafletMapProps {
   campsiteLatitude: number;
   campsiteLongitude: number;
   onDistanceCalculated: (distance: number) => void;
+  transportMode: "driving" | "cycling" | "walking";
 }
 
 export default function LeafletMap({
@@ -27,10 +28,73 @@ export default function LeafletMap({
   campsiteLatitude,
   campsiteLongitude,
   onDistanceCalculated,
+  transportMode,
 }: LeafletMapProps) {
   const mapRef = useRef<L.Map | null>(null);
   const routingControlRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const updateRoute = useCallback(() => {
+    if (!mapRef.current) return;
+
+    // Remove existing routing control if it exists
+    if (routingControlRef.current) {
+      routingControlRef.current.remove();
+      routingControlRef.current = null;
+    }
+
+    // Add new routing control
+    routingControlRef.current = L.Routing.control({
+      waypoints: [
+        L.latLng(campsiteLatitude, campsiteLongitude),
+        L.latLng(latitude, longitude),
+      ],
+      routeWhileDragging: false,
+      showAlternatives: false,
+      createMarker: () => null,
+      router: L.Routing.osrmv1({
+        serviceUrl: "https://router.project-osrm.org/route/v1",
+        profile:
+          transportMode === "driving"
+            ? "car"
+            : transportMode === "cycling"
+            ? "bicycle"
+            : "foot",
+        useHints: false,
+      }),
+      lineOptions: {
+        styles: [
+          {
+            color:
+              transportMode === "driving"
+                ? "#6366f1"
+                : transportMode === "cycling"
+                ? "#22c55e"
+                : "#f59e0b",
+            opacity: 0.8,
+            weight: 4,
+          },
+        ],
+        addWaypoints: false,
+      },
+      show: false,
+    }).addTo(mapRef.current);
+
+    // Calculate distance
+    routingControlRef.current.on("routesfound", (e: any) => {
+      const routes = e.routes;
+      if (routes?.[0]?.summary?.totalDistance) {
+        onDistanceCalculated(routes[0].summary.totalDistance / 1000);
+      }
+    });
+  }, [
+    latitude,
+    longitude,
+    campsiteLatitude,
+    campsiteLongitude,
+    transportMode,
+    onDistanceCalculated,
+  ]);
 
   const initializeMap = useCallback(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -76,33 +140,8 @@ export default function LeafletMap({
       .bindPopup("Dein Standort")
       .openPopup();
 
-    // Add routing
-    routingControlRef.current = L.Routing.control({
-      waypoints: [
-        L.latLng(campsiteLatitude, campsiteLongitude),
-        L.latLng(latitude, longitude),
-      ],
-      routeWhileDragging: false,
-      showAlternatives: false,
-      createMarker: () => null,
-      router: L.Routing.osrmv1({
-        serviceUrl: "https://router.project-osrm.org/route/v1",
-        profile: "driving",
-      }),
-      lineOptions: {
-        styles: [{ color: "#6366f1", opacity: 0.8, weight: 4 }],
-        addWaypoints: false,
-      },
-      show: false,
-    }).addTo(mapRef.current);
-
-    // Calculate distance
-    routingControlRef.current.on("routesfound", (e: any) => {
-      const routes = e.routes;
-      if (routes?.[0]?.summary?.totalDistance) {
-        onDistanceCalculated(routes[0].summary.totalDistance / 1000);
-      }
-    });
+    // Add initial routing
+    updateRoute();
 
     // Fit bounds
     const bounds = L.latLngBounds([
@@ -118,12 +157,12 @@ export default function LeafletMap({
   }, [
     latitude,
     longitude,
+    name,
     campsiteLatitude,
     campsiteLongitude,
-    onDistanceCalculated,
+    updateRoute,
   ]);
 
-  // Cleanup function
   const cleanup = useCallback(() => {
     if (routingControlRef.current) {
       routingControlRef.current.remove();
@@ -135,7 +174,6 @@ export default function LeafletMap({
     }
   }, []);
 
-  // Initialize map after component mounts
   useEffect(() => {
     const timer = setTimeout(() => {
       initializeMap();
@@ -147,12 +185,11 @@ export default function LeafletMap({
     };
   }, [initializeMap, cleanup]);
 
-  // Handle prop changes
   useEffect(() => {
     if (mapRef.current) {
-      mapRef.current.invalidateSize();
+      updateRoute();
     }
-  }, [mapRef]); // Updated dependency array
+  }, [mapRef, updateRoute]); // Removed unnecessary transportMode dependency
 
   return (
     <div
