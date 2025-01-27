@@ -82,25 +82,29 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
         throw new Error("Unexpected response format");
       }
 
-      const overpassActivities = data.elements.map((item: any) => ({
-        title: item.tags.name || "Unbenannte Attraktion",
-        description: item.tags.description || "",
-        type:
-          item.tags.tourism === "attraction"
-            ? "attraction"
-            : item.tags.tourism === "caravan_site"
-            ? "caravan_site"
-            : item.tags.route || "attraction",
-        gradient: "from-gray-500/20 to-gray-500/20",
-        from: item.tags.from || "",
-        to: item.tags.to || "",
-        distance: item.tags.distance || "",
-        route: item.tags.route || "",
-        website: item.tags.website || "",
-        latitude: item.lat,
-        longitude: item.lon,
-        charge: item.tags.charge || "",
-      }));
+      const overpassActivities = data.elements.map((item: any) => {
+        const lat = item.lat || item.center?.lat;
+        const lon = item.lon || item.center?.lon;
+        return {
+          title: item.tags.name || "Unbenannte Attraktion",
+          description: item.tags.description || "",
+          type:
+            item.tags.tourism === "attraction"
+              ? "attraction"
+              : item.tags.tourism === "caravan_site"
+              ? "caravan_site"
+              : item.tags.route || "attraction",
+          gradient: "from-gray-500/20 to-gray-500/20",
+          from: item.tags.from || "",
+          to: item.tags.to || "",
+          distance: item.tags.distance || "",
+          route: item.tags.route || "",
+          website: item.tags.website || "",
+          latitude: lat,
+          longitude: lon,
+          charge: item.tags.charge || "",
+        };
+      });
 
       setActivities(overpassActivities);
       localStorage.setItem(cacheKey, JSON.stringify(overpassActivities));
@@ -364,6 +368,8 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
           latitude={selectedActivity.latitude}
           longitude={selectedActivity.longitude}
           name={selectedActivity.title}
+          campsiteLatitude={latitude}
+          campsiteLongitude={longitude}
         />
       )}
     </div>
