@@ -150,7 +150,6 @@ export default function LeafletMap({
 
     updateRoute();
 
-    // Fit bounds
     const bounds = L.latLngBounds([
       [latitude, longitude],
       [campsiteLatitude, campsiteLongitude],
