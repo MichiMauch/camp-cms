@@ -148,7 +148,6 @@ export default function LeafletMap({
       .bindPopup("Dein Standort")
       .openPopup();
 
-    // Add initial routing
     updateRoute();
 
     // Fit bounds
