@@ -25,7 +25,7 @@ const MapModal: React.FC<MapModalProps> = ({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <Transition.Child
+        <Transition
           as={Fragment}
           enter="ease-out duration-300"
           enterFrom="opacity-0"
@@ -35,7 +35,7 @@ const MapModal: React.FC<MapModalProps> = ({
           leaveTo="opacity-0"
         >
           <div className="fixed inset-0 bg-black/50" />
-        </Transition.Child>
+        </Transition>
 
         <div className="fixed inset-0 overflow-y-auto">
           <div className="flex min-h-full items-center justify-center p-4">
