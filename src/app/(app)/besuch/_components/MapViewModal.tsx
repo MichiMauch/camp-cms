@@ -81,50 +81,63 @@ export default function MapViewModal({
   };
 
   return (
-    <div className="h-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-medium leading-6 text-gray-900">{name}</h3>
-        <div className="flex items-center gap-4">
-          <Select
-            value={transportMode}
-            onValueChange={(value: TransportMode) => setTransportMode(value)}
-          >
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="Transportmittel" />
-            </SelectTrigger>
-            <SelectContent>
-              {transportOptions.map((option) => (
-                <SelectItem key={option.value} value={option.value}>
-                  <div className="flex items-center gap-2">
-                    <option.icon className="h-4 w-4" />
-                    <div className="flex flex-col">
-                      <span>{option.label}</span>
-                      <span className="text-xs text-gray-500">
-                        {option.description}
-                      </span>
+    <div className="flex flex-col h-full">
+      <div className="p-6 bg-background">
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col">
+            <span className="text-xs font-medium">Wegstrecke nach</span>
+            <h3 className="text-lg font-medium leading-6">
+              {name}
+              {distance !== null && (
+                <span className="ml-2">
+                  mit dem{" "}
+                  {
+                    transportOptions.find(
+                      (option) => option.value === transportMode
+                    )?.label
+                  }
+                  , {distance.toFixed(2)} km, ~
+                  {getEstimatedTime(distance, transportMode)} Min.
+                </span>
+              )}
+            </h3>
+          </div>
+          <div className="flex items-center gap-4">
+            <Select
+              value={transportMode}
+              onValueChange={(value: TransportMode) => setTransportMode(value)}
+            >
+              <SelectTrigger className="w-[235px] h-[30]">
+                <SelectValue placeholder="Transportmittel" />
+              </SelectTrigger>
+              <SelectContent>
+                {transportOptions.map((option) => (
+                  <SelectItem key={option.value} value={option.value}>
+                    <div className="flex items-center gap-2">
+                      <option.icon className="h-4 w-4" />
+                      <div className="flex flex-col">
+                        <span>{option.label}</span>
+                        <span className="text-xs">{option.description}</span>
+                      </div>
                     </div>
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {distance !== null && (
-            <div className="text-sm text-gray-600">
-              <p>Entfernung: {distance.toFixed(2)} km</p>
-              <p>Zeit: ~{getEstimatedTime(distance, transportMode)} Min.</p>
-            </div>
-          )}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
         </div>
       </div>
-      <LeafletMap
-        latitude={latitude}
-        longitude={longitude}
-        name={name}
-        campsiteLatitude={campsiteLatitude}
-        campsiteLongitude={campsiteLongitude}
-        onDistanceCalculated={setDistance}
-        transportMode={transportMode}
-      />
+      <div className="flex-1 relative min-h-0">
+        <LeafletMap
+          latitude={latitude}
+          longitude={longitude}
+          name={name}
+          campsiteLatitude={campsiteLatitude}
+          campsiteLongitude={campsiteLongitude}
+          onDistanceCalculated={setDistance}
+          transportMode={transportMode}
+        />
+      </div>
     </div>
   );
 }

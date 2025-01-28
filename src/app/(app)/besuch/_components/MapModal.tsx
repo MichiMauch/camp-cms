@@ -1,7 +1,8 @@
-import React from "react";
+import type React from "react";
 import { Dialog, Transition } from "@headlessui/react";
 import { Fragment } from "react";
 import MapViewModal from "./MapViewModal";
+import { X } from "lucide-react";
 
 interface MapModalProps {
   isOpen: boolean;
@@ -38,8 +39,17 @@ const MapModal: React.FC<MapModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-4xl transform overflow-hidden rounded-2xl bg-white p-6 text-left align-middle shadow-xl transition-all">
-                <div className="h-[600px] relative">
+              <Dialog.Panel className="w-full max-w-4xl transform overflow-visible rounded-2xl bg-background border-2 border-foreground text-left align-middle shadow-xl transition-all h-[90vh] p-0 flex flex-col">
+                <div className="absolute -top-6 -right-6 z-50">
+                  <button
+                    onClick={onClose}
+                    className="p-2 rounded-lg hover:text-orange-500 transition-colors text-orange-400"
+                    aria-label="Schließen"
+                  >
+                    <X className="h-10 w-10" />
+                  </button>
+                </div>
+                <div className="flex-1 min-h-0 overflow-hidden rounded-2xl">
                   <MapViewModal
                     latitude={latitude ?? 0}
                     longitude={longitude ?? 0}
@@ -47,15 +57,6 @@ const MapModal: React.FC<MapModalProps> = ({
                     campsiteLatitude={campsiteLatitude}
                     campsiteLongitude={campsiteLongitude}
                   />
-                </div>
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="button"
-                    className="inline-flex justify-center rounded-md border border-transparent bg-blue-100 px-4 py-2 text-sm font-medium text-blue-900 hover:bg-blue-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
-                    onClick={onClose}
-                  >
-                    Schließen
-                  </button>
                 </div>
               </Dialog.Panel>
             </Transition.Child>

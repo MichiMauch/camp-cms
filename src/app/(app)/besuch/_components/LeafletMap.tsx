@@ -4,6 +4,12 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-routing-machine";
 import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 
+const hideRoutingContainer = `
+  .leaflet-routing-container {
+    display: none !important;
+  }
+`;
+
 declare module "leaflet" {
   namespace Routing {
     function control(options: any): any;
@@ -33,20 +39,38 @@ export default function LeafletMap({
   const mapRef = useRef<L.Map | null>(null);
   const routingControlRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const markersRef = useRef<{ attraction?: L.Marker; campsite?: L.Marker }>({});
 
-  // Mapbox Access Token (ersetze mit deinem eigenen Token)
   const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+
+  useEffect(() => {
+    const style = document.createElement("style");
+    style.innerHTML = hideRoutingContainer;
+    document.head.appendChild(style);
+
+    return () => {
+      document.head.removeChild(style);
+    };
+  }, []);
+
+  // Funktion zum Öffnen beider Popups
+  const openBothPopups = useCallback(() => {
+    if (markersRef.current.campsite) {
+      markersRef.current.campsite.openPopup();
+    }
+    if (markersRef.current.attraction) {
+      markersRef.current.attraction.openPopup();
+    }
+  }, []);
 
   const updateRoute = useCallback(() => {
     if (!mapRef.current) return;
 
-    // Remove existing routing control if it exists
     if (routingControlRef.current) {
       routingControlRef.current.remove();
       routingControlRef.current = null;
     }
 
-    // Mapbox Profile basierend auf dem Transportmodus
     const profile =
       transportMode === "driving"
         ? "mapbox/driving"
@@ -54,7 +78,6 @@ export default function LeafletMap({
         ? "mapbox/cycling"
         : "mapbox/walking";
 
-    // Add new routing control mit Mapbox
     routingControlRef.current = L.Routing.control({
       waypoints: [
         L.latLng(campsiteLatitude, campsiteLongitude),
@@ -63,7 +86,7 @@ export default function LeafletMap({
       routeWhileDragging: false,
       showAlternatives: false,
       createMarker: () => null,
-      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN!, {
+      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN, {
         profile: profile,
         geometries: "geojson",
       }),
@@ -83,9 +106,9 @@ export default function LeafletMap({
         addWaypoints: false,
       },
       show: false,
+      fitSelectedRoutes: false,
     }).addTo(mapRef.current);
 
-    // Calculate distance
     routingControlRef.current.on("routesfound", (e: any) => {
       const routes = e.routes;
       if (routes?.[0]?.summary?.totalDistance) {
@@ -99,12 +122,12 @@ export default function LeafletMap({
     campsiteLongitude,
     transportMode,
     onDistanceCalculated,
+    MAPBOX_ACCESS_TOKEN,
   ]);
 
   const initializeMap = useCallback(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    // Create map instance
     mapRef.current = L.map(containerRef.current, {
       center: [
         (latitude + campsiteLatitude) / 2,
@@ -112,9 +135,9 @@ export default function LeafletMap({
       ],
       zoom: 12,
       preferCanvas: true,
+      closePopupOnClick: false, // Diese Option erlaubt mehrere offene Popups
     });
 
-    // Add tile layer (Mapbox Tiles)
     L.tileLayer(
       `https://api.mapbox.com/styles/v1/mapbox/outdoors-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
       {
@@ -123,7 +146,6 @@ export default function LeafletMap({
       }
     ).addTo(mapRef.current);
 
-    // Add markers
     const attractionIcon = L.icon({
       iconUrl: "/location-pin.png",
       iconSize: [38, 38],
@@ -138,15 +160,35 @@ export default function LeafletMap({
       popupAnchor: [0, -38],
     });
 
-    L.marker([latitude, longitude], { icon: attractionIcon })
-      .addTo(mapRef.current)
-      .bindPopup(name)
-      .openPopup();
+    // Erstelle die Marker und ihre Popups
+    const campsitePopup = L.popup({
+      closeButton: false,
+      autoClose: false,
+      closeOnClick: false,
+    }).setContent("Dein Standort");
 
-    L.marker([campsiteLatitude, campsiteLongitude], { icon: campsiteIcon })
+    const attractionPopup = L.popup({
+      closeButton: false,
+      autoClose: false,
+      closeOnClick: false,
+    }).setContent(name);
+
+    // Erstelle die Marker und binde die Popups
+    const campsiteMarker = L.marker([campsiteLatitude, campsiteLongitude], {
+      icon: campsiteIcon,
+    })
       .addTo(mapRef.current)
-      .bindPopup("Dein Standort")
-      .openPopup();
+      .bindPopup(campsitePopup);
+
+    const attractionMarker = L.marker([latitude, longitude], {
+      icon: attractionIcon,
+    })
+      .addTo(mapRef.current)
+      .bindPopup(attractionPopup);
+
+    // Öffne beide Popups
+    campsiteMarker.openPopup();
+    attractionMarker.openPopup();
 
     updateRoute();
 
@@ -156,9 +198,11 @@ export default function LeafletMap({
     ]);
     mapRef.current.fitBounds(bounds, { padding: [50, 50] });
 
-    // Force a resize after initialization
     setTimeout(() => {
       mapRef.current?.invalidateSize();
+      // Öffne die Popups erneut nach dem Zoom
+      campsiteMarker.openPopup();
+      attractionMarker.openPopup();
     }, 100);
   }, [
     latitude,
@@ -167,6 +211,7 @@ export default function LeafletMap({
     campsiteLatitude,
     campsiteLongitude,
     updateRoute,
+    MAPBOX_ACCESS_TOKEN,
   ]);
 
   const cleanup = useCallback(() => {
@@ -178,6 +223,7 @@ export default function LeafletMap({
       mapRef.current.remove();
       mapRef.current = null;
     }
+    markersRef.current = {};
   }, []);
 
   useEffect(() => {
@@ -195,13 +241,31 @@ export default function LeafletMap({
     if (mapRef.current) {
       updateRoute();
     }
-  }, [mapRef, updateRoute, transportMode]);
+  }, [updateRoute]); // Removed transportMode from dependencies
+
+  // Event-Listener für Map-Bewegungen
+  useEffect(() => {
+    if (mapRef.current) {
+      const map = mapRef.current;
+      const handleMoveEnd = () => {
+        openBothPopups();
+      };
+
+      map.on("moveend", handleMoveEnd);
+      map.on("zoomend", handleMoveEnd);
+
+      return () => {
+        map.off("moveend", handleMoveEnd);
+        map.off("zoomend", handleMoveEnd);
+      };
+    }
+  }, [openBothPopups]);
 
   return (
     <div
       ref={containerRef}
-      className="h-full w-full rounded-lg"
-      style={{ minHeight: "400px", position: "relative" }}
+      className="absolute inset-0 w-full h-full"
+      style={{ minHeight: "400px" }}
     />
   );
 }

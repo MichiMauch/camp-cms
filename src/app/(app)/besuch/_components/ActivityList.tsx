@@ -276,88 +276,72 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
               className={`
                 group relative p-6 rounded-2xl hover:scale-[1.02]
                 transition-all cursor-pointer h-full text-black
+                bg-background border border-foreground flex flex-col justify-between
                 ${getDefaultBgClass(routeType)} 
                 ${getHoverClass(routeType)}
               `}
-              onClick={() => setSelectedActivity(activity)}
             >
-              <div className="flex flex-col justify-between items-start mb-3 pr-6">
-                <span className="text-sm text-black flex items-center justify-between w-full">
-                  <span className="flex items-center">
-                    <MapPin
-                      className="mr-2 h-4 w-4 cursor-pointer"
-                      onClick={(e) => {
-                        e.stopPropagation(); // Verhindert Event-Bubbling
-                        e.preventDefault();
-                        setSelectedActivity(activity);
-                      }}
-                    />
-                    {activity.location || " "}
+              <div>
+                <div className="flex flex-col justify-between items-start mb-3 pr-6">
+                  <span className="text-sm text-black flex items-center justify-between w-full">
+                    <span className="flex items-center">
+                      {activity.location || " "}
+                    </span>
+                    <Badge variant="secondary" className="font-normal">
+                      {routeType ? routeMapping[routeType] : "Unbekannt"}
+                    </Badge>
                   </span>
-                  <Badge variant="secondary" className="font-normal">
-                    {routeType ? routeMapping[routeType] : "Unbekannt"}
-                  </Badge>
-                </span>
 
-                <h2 className="font-semibold text-2xl flex items-center">
-                  {activity.title}
-                  {activity.website && (
-                    <ExternalLink className="ml-2 h-4 w-4" />
-                  )}
-                </h2>
-              </div>
-              <div className="flex flex-col justify-between items-start">
-                <span className="text-sm">
-                  {activity.from && activity.to && activity.distance
-                    ? `${activity.from} - ${activity.to}, ${activity.distance}km`
-                    : activity.description
-                    ? `${activity.description}${
-                        activity.distance ? `, ${activity.distance}km` : ""
-                      }`
-                    : ""}
-                </span>
-                {activity.charge && (
+                  <h2 className="font-semibold text-2xl flex items-center">
+                    {activity.title}
+                  </h2>
+                </div>
+                <div className="flex flex-col justify-between items-start mb-auto pb-4">
                   <span className="text-sm">
-                    <strong>Kosten:</strong> {activity.charge}
+                    {activity.from && activity.to && activity.distance
+                      ? `${activity.from} - ${activity.to}, ${activity.distance}km`
+                      : activity.description
+                      ? `${activity.description}${
+                          activity.distance ? `, ${activity.distance}km` : ""
+                        }`
+                      : ""}
                   </span>
-                )}
+                  {activity.charge && (
+                    <span className="text-sm">
+                      <strong>Kosten:</strong> {activity.charge}
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="flex justify-between items-center mt-3">
-                <button
-                  className="text-sm text-black font-bold flex items-center"
-                  onClick={() => setSelectedActivity(activity)}
-                >
-                  Auf Karte anzeigen
-                  <MapPin className="ml-1 h-4 w-4" />
-                </button>
-                {activity.website && (
-                  <a
-                    href={activity.website}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-sm text-black font-bold flex items-center"
+              <div className="flex flex-row items-center justify-between bg-background -mx-6 -mb-6 rounded-b-2xl border-t border-foreground">
+                {/* Linke Hälfte */}
+                <div className="pt-2 pb-2 w-1/2 flex justify-center transition-colors hover:bg-foreground hover:text-background rounded-bl-2xl">
+                  <button
+                    className="text-sm text-foreground font-bold flex items-center w-full justify-center py-2 hover:bg-transparent hover:text-inherit"
+                    onClick={() => setSelectedActivity(activity)}
                   >
-                    Details anzeigen
-                    <ExternalLink className="ml-1 h-4 w-4" />
-                  </a>
+                    Karte anzeigen
+                    <MapPin className="ml-1 h-4 w-4" />
+                  </button>
+                </div>
+
+                {/* Rechte Hälfte */}
+                {activity.website && (
+                  <div className="pt-2 pb-2 border-l border-foreground w-1/2 flex justify-center transition-colors hover:bg-foreground hover:text-background rounded-br-2xl">
+                    <button
+                      className="text-sm text-foreground font-bold flex items-center w-full justify-center py-2 hover:bg-transparent hover:text-inherit"
+                      onClick={() => window.open(activity.website, "_blank")}
+                    >
+                      Details anzeigen
+                      <ExternalLink className="ml-1 h-4 w-4" />
+                    </button>
+                  </div>
                 )}
               </div>
             </div>
           );
 
-          return activity.website ? (
-            <a
-              key={index}
-              href={activity.website}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="h-full"
-            >
-              {content}
-            </a>
-          ) : (
-            content
-          );
+          return content;
         })}
       </div>
 
