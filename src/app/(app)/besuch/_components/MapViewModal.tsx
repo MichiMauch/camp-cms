@@ -63,7 +63,7 @@ export default function MapViewModal({
     },
     {
       value: "walking",
-      label: "Zu Fuß",
+      label: "Zu Fuss",
       icon: FootprintsIcon,
       description: "Fußgängerfreundliche Route",
     },
