@@ -7,7 +7,7 @@ import "leaflet-routing-machine/dist/leaflet-routing-machine.css";
 declare module "leaflet" {
   namespace Routing {
     function control(options: any): any;
-    function osrmv1(options: any): any;
+    function mapbox(accessToken: string, options?: any): any;
   }
 }
 
@@ -34,6 +34,9 @@ export default function LeafletMap({
   const routingControlRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Mapbox Access Token (ersetze mit deinem eigenen Token)
+  const MAPBOX_ACCESS_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN || "";
+
   const updateRoute = useCallback(() => {
     if (!mapRef.current) return;
 
@@ -43,7 +46,15 @@ export default function LeafletMap({
       routingControlRef.current = null;
     }
 
-    // Add new routing control
+    // Mapbox Profile basierend auf dem Transportmodus
+    const profile =
+      transportMode === "driving"
+        ? "mapbox/driving"
+        : transportMode === "cycling"
+        ? "mapbox/cycling"
+        : "mapbox/walking";
+
+    // Add new routing control mit Mapbox
     routingControlRef.current = L.Routing.control({
       waypoints: [
         L.latLng(campsiteLatitude, campsiteLongitude),
@@ -52,15 +63,9 @@ export default function LeafletMap({
       routeWhileDragging: false,
       showAlternatives: false,
       createMarker: () => null,
-      router: L.Routing.osrmv1({
-        serviceUrl: "https://router.project-osrm.org/route/v1",
-        profile:
-          transportMode === "driving"
-            ? "car"
-            : transportMode === "cycling"
-            ? "bicycle"
-            : "foot",
-        useHints: false,
+      router: L.Routing.mapbox(MAPBOX_ACCESS_TOKEN!, {
+        profile: profile,
+        geometries: "geojson",
       }),
       lineOptions: {
         styles: [
@@ -109,11 +114,14 @@ export default function LeafletMap({
       preferCanvas: true,
     });
 
-    // Add tile layer
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-    }).addTo(mapRef.current);
+    // Add tile layer (Mapbox Tiles)
+    L.tileLayer(
+      `https://api.mapbox.com/styles/v1/mapbox/streets-v11/tiles/{z}/{x}/{y}?access_token=${MAPBOX_ACCESS_TOKEN}`,
+      {
+        attribution:
+          '© <a href="https://www.mapbox.com/about/maps/">Mapbox</a> © <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      }
+    ).addTo(mapRef.current);
 
     // Add markers
     const attractionIcon = L.icon({
@@ -189,7 +197,7 @@ export default function LeafletMap({
     if (mapRef.current) {
       updateRoute();
     }
-  }, [mapRef, updateRoute]); // Removed unnecessary transportMode dependency
+  }, [mapRef, updateRoute, transportMode]);
 
   return (
     <div
