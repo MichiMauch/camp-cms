@@ -26,9 +26,9 @@ const MapModal: React.FC<MapModalProps> = ({
   return (
     <Transition appear show={isOpen} as={Fragment}>
       <Dialog as="div" className="relative z-50" onClose={onClose}>
-        <div className="fixed inset-0 bg-black/50" />
+        <div className="fixed inset-0 bg-black/50 z-40" />
 
-        <div className="fixed inset-0 overflow-y-auto">
+        <div className="fixed inset-0 overflow-y-auto z-50">
           <div className="flex min-h-full items-center justify-center p-4">
             <Transition.Child
               as={Fragment}
@@ -39,7 +39,7 @@ const MapModal: React.FC<MapModalProps> = ({
               leaveFrom="opacity-100 scale-100"
               leaveTo="opacity-0 scale-95"
             >
-              <Dialog.Panel className="w-full max-w-4xl transform overflow-visible rounded-2xl bg-background border-2 border-foreground text-left align-middle shadow-xl transition-all h-[90vh] p-0 flex flex-col">
+              <Dialog.Panel className="w-full max-w-4xl transform overflow-visible rounded-2xl bg-background border-2 border-foreground text-left align-middle shadow-xl transition-all h-[90vh] p-0 flex flex-col z-50">
                 <div className="absolute -top-6 -right-6 z-50">
                   <button
                     onClick={onClose}

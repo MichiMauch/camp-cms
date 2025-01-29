@@ -25,6 +25,8 @@ export default function CampingDetail({
     date: "",
     location: "",
     image: "",
+    country: "",
+    previousVisits: [], // Liste der vorherigen Besuche hinzugefügt
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -47,10 +49,11 @@ export default function CampingDetail({
           throw new Error("Failed to fetch campsite details");
         }
         const data = await response.json();
+        console.log("Fetched data:", data); // Logging hinzugefügt
         setLastVisit(data);
       } catch (err) {
         setError("Fehler beim Abrufen der Campingplatzdetails.");
-        console.error(err);
+        console.error("Fetch error:", err); // Fehlerprotokollierung hinzugefügt
       } finally {
         setLoading(false);
       }
@@ -103,6 +106,8 @@ export default function CampingDetail({
                 date={lastVisit.date}
                 latitude={lastVisit.latitude}
                 longitude={lastVisit.longitude}
+                country={lastVisit.country}
+                previousVisits={lastVisit.previousVisits} // Liste der vorherigen Besuche übergeben
               />
 
               {/* Wetter Container */}

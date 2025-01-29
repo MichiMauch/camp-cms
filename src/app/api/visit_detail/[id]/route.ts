@@ -1,10 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/turso";
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+export async function GET(request: Request, { params }: { params: { id: string } }) {
   try {
     const result = await db.execute({
       sql: `
@@ -16,7 +13,14 @@ export async function GET(
           c.name AS title,
           c.location AS location,
           c.latitude AS latitude,
-          c.longitude AS longitude
+          c.longitude AS longitude,
+          c.country AS country,
+          (
+            SELECT GROUP_CONCAT(strftime('%d.%m.%Y', v2.date_from) || ' - ' || strftime('%d.%m.%Y', v2.date_to), ', ')
+            FROM visits v2
+            WHERE v2.campsite_id = v.campsite_id
+              AND v2.id != v.id
+          ) AS previousVisitDates
         FROM visits v
         JOIN campsites c ON v.campsite_id = c.id
         WHERE v.id = ?
@@ -35,9 +39,11 @@ export async function GET(
       title: visit.title,
       date: `${visit.dateFrom} - ${visit.dateTo}`,
       location: visit.location,
+      country: visit.country,
       image: visit.image,
       latitude: visit.latitude,
       longitude: visit.longitude,
+      previousVisits: typeof visit.previousVisitDates === 'string' ? visit.previousVisitDates.split(', ') : [], // Liste der vorherigen Besuche
     });
   } catch (error) {
     console.error("Error fetching visit details:", error);

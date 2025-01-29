@@ -1,5 +1,13 @@
 import React, { useEffect, useState } from "react";
-import { ExternalLink, Loader, MapPin } from "lucide-react";
+import {
+  ExternalLink,
+  Loader,
+  MapPin,
+  FerrisWheel,
+  Bike,
+  Mountain,
+  Tent,
+} from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import {
   Select,
@@ -59,11 +67,41 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
     }
 
     const cacheKey = `overpass_${latitude}_${longitude}_${radius}`;
+    const cacheTimestampKey = `${cacheKey}_timestamp`;
+    const oneDay = 24 * 60 * 60 * 1000; // Ein Tag in Millisekunden
+
     if (!forceReload) {
       const cachedData = localStorage.getItem(cacheKey);
-      if (cachedData) {
-        setActivities(JSON.parse(cachedData));
+      const cacheTimestamp = localStorage.getItem(cacheTimestampKey);
+      const now = new Date().getTime();
+
+      if (
+        cachedData &&
+        cacheTimestamp &&
+        now - parseInt(cacheTimestamp) < oneDay
+      ) {
+        const cachedActivities = JSON.parse(cachedData);
+        setActivities(cachedActivities);
         setLoading(false);
+
+        // Abrufen der Ortsnamen aus dem Cache
+        cachedActivities.forEach(async (activity: Activity) => {
+          if (activity.latitude && activity.longitude) {
+            const location = await fetchLocation(
+              activity.latitude,
+              activity.longitude
+            );
+            setActivities((prevActivities) =>
+              prevActivities.map((a) =>
+                a.latitude === activity.latitude &&
+                a.longitude === activity.longitude
+                  ? { ...a, location }
+                  : a
+              )
+            );
+          }
+        });
+
         return;
       }
     }
@@ -108,6 +146,7 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
 
       setActivities(overpassActivities);
       localStorage.setItem(cacheKey, JSON.stringify(overpassActivities));
+      localStorage.setItem(cacheTimestampKey, new Date().getTime().toString());
 
       // Abrufen der Ortsnamen im Hintergrund
       overpassActivities.forEach(async (activity: Activity) => {
@@ -283,16 +322,24 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
             >
               <div>
                 <div className="flex flex-col justify-between items-start mb-3 pr-6">
-                  <span className="text-sm text-black flex items-center justify-between w-full">
+                  <span className="text-sm text-black flex items-center justify-between w-full mt-2">
                     <span className="flex items-center">
                       {activity.location || " "}
                     </span>
-                    <Badge variant="secondary" className="font-normal">
-                      {routeType ? routeMapping[routeType] : "Unbekannt"}
-                    </Badge>
                   </span>
-
-                  <h2 className="font-semibold text-2xl flex items-center">
+                  {routeType === "attraction" && (
+                    <FerrisWheel className="h-6 w-6 text-muted-black absolute top-2 left-5" />
+                  )}
+                  {routeType === "bicycle" && (
+                    <Bike className="h-6 w-6 text-muted-black absolute top-2 left-6" />
+                  )}
+                  {routeType === "foot" && (
+                    <Mountain className="h-6 w-6 text-muted-black absolute top-2 left-6" />
+                  )}
+                  {routeType === "caravan_site" && (
+                    <Tent className="h-6 w-6 text-muted-black absolute top-2 left-5" />
+                  )}
+                  <h2 className="font-semibold text-2xl flex items-center mt-2">
                     {activity.title}
                   </h2>
                 </div>
