@@ -282,10 +282,22 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
               <SelectGroup>
                 <SelectLabel>Aktivitätstyp</SelectLabel>
                 <SelectItem value="all">Alle Typen</SelectItem>
-                <SelectItem value="attraction">Attraktion</SelectItem>
-                <SelectItem value="foot">Wanderung</SelectItem>
-                <SelectItem value="bicycle">Biketour</SelectItem>
-                <SelectItem value="caravan_site">Camping</SelectItem>
+                <SelectItem value="attraction">
+                  <FerrisWheel className="inline-block mr-2 h-4 w-4" />
+                  Attraktion
+                </SelectItem>
+                <SelectItem value="foot">
+                  <Mountain className="inline-block mr-2 h-4 w-4" />
+                  Wanderung
+                </SelectItem>
+                <SelectItem value="bicycle">
+                  <Bike className="inline-block mr-2 h-4 w-4" />
+                  Biketour
+                </SelectItem>
+                <SelectItem value="caravan_site">
+                  <Tent className="inline-block mr-2 h-4 w-4" />
+                  Camping
+                </SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>
