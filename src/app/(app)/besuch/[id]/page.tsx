@@ -2,11 +2,12 @@
 
 import { useRef, useEffect, useState } from "react";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import MapView from "../../_components/mapview"; // Ensure this path is correct or update it to the correct path
+import MapView from "../../_components/mapview";
 import WeatherDetails from "../_components/WeatherDetails";
 import VisitDetails from "../_components/VisitDetails";
 import ActivityList from "../_components/ActivityList";
 import ParallaxImage from "../_components/ParallaxImage";
+import { useRouter } from "next/navigation";
 
 const BASE_IMAGE_URL = "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/";
 const DEFAULT_IMAGE_EXTENSION = ".webp";
@@ -16,6 +17,7 @@ export default function CampingDetail({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const router = useRouter();
   const [params, setParams] = useState<{ id: string } | null>(null);
   const [lastVisit, setLastVisit] = useState({
     latitude: 0,
@@ -26,7 +28,7 @@ export default function CampingDetail({
     location: "",
     image: "",
     country: "",
-    previousVisits: [], // Liste der vorherigen Besuche hinzugefügt
+    previousVisits: [],
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -49,11 +51,11 @@ export default function CampingDetail({
           throw new Error("Failed to fetch campsite details");
         }
         const data = await response.json();
-        console.log("Fetched data:", data); // Logging hinzugefügt
+        console.log("Fetched data:", data);
         setLastVisit(data);
       } catch (err) {
         setError("Fehler beim Abrufen der Campingplatzdetails.");
-        console.error("Fetch error:", err); // Fehlerprotokollierung hinzugefügt
+        console.error("Fetch error:", err);
       } finally {
         setLoading(false);
       }
@@ -90,14 +92,23 @@ export default function CampingDetail({
 
   return (
     <div className="h-screen bg-background overflow-hidden">
-      {/* Hauptcontainer mit Custom Scroll */}
+      {/* Zurück Button außerhalb des ScrollArea */}
+      <button
+        onClick={() => router.back()}
+        className="fixed top-8 left-8 z-50 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-orange-500 px-4 py-2 rounded-lg transition-colors"
+      >
+        <span className="animate-pulse">← Zurück</span>
+      </button>
+
       <ScrollArea ref={containerRef} className="h-screen">
-        <div className="min-h-screen">
-          {/* Bild Container mit Parallax */}
-          <ParallaxImage imageUrl={imageUrl} title={lastVisit.title} />
+        <div className="relative min-h-screen">
+          {/* Bild Container mit fixiertem Bild */}
+          <div className="fixed top-0 left-0 w-full h-screen overflow-hidden z-0">
+            <ParallaxImage imageSrc={imageUrl} title={lastVisit.title} />
+          </div>
 
           {/* Content Grid mit überlappenden Elementen */}
-          <div className="relative -mt-20 px-8 pb-8">
+          <div className="relative pt-[50vh] px-8 pb-8 z-10">
             <div className="grid grid-cols-12 gap-6">
               {/* Hauptinfo Karte */}
               <VisitDetails
@@ -107,7 +118,7 @@ export default function CampingDetail({
                 latitude={lastVisit.latitude}
                 longitude={lastVisit.longitude}
                 country={lastVisit.country}
-                previousVisits={lastVisit.previousVisits} // Liste der vorherigen Besuche übergeben
+                previousVisits={lastVisit.previousVisits}
               />
 
               {/* Wetter Container */}

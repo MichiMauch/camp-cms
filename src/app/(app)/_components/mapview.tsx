@@ -13,7 +13,9 @@ interface MapViewProps {
 export default function MapView({ latitude, longitude, name }: MapViewProps) {
   useEffect(() => {
     // Leaflet map initialization
-    const map = L.map("map").setView([latitude, longitude], 13);
+    const map = L.map("map", {
+      scrollWheelZoom: false, // Disable zooming with scroll wheel
+    }).setView([latitude, longitude], 13);
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       attribution:
