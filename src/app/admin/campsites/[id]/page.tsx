@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { use } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,14 +17,15 @@ interface Campsite {
   teaserImage: string;
   latitude: number;
   longitude: number;
+  country: string; // Neues Feld
+  country_code: string; // Neues Feld
 }
 
 export default function CampsiteDetailPage({
-  params: paramsPromise,
+  params,
 }: {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }) {
-  const params = use(paramsPromise);
   const [campsite, setCampsite] = useState<Campsite | null>(null);
   const [editedCampsite, setEditedCampsite] = useState<Campsite | null>(null);
   const [loading, setLoading] = useState(true);
@@ -54,7 +54,7 @@ export default function CampsiteDetailPage({
         setEditedCampsite(data);
       } catch {
         setError("Fehler beim Abrufen der Campingplatz-Details.");
-        console.error("Fehler beim Abrufen der Campingplatz-Details."); // Ändere diese Zeile
+        console.error("Fehler beim Abrufen der Campingplatz-Details.");
       } finally {
         setLoading(false);
       }
@@ -73,7 +73,7 @@ export default function CampsiteDetailPage({
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(editedCampsite),
+        body: JSON.stringify(editedCampsite), // Hier werden alle Felder, einschließlich der neuen, gesendet
       });
 
       if (!response.ok) {
@@ -164,9 +164,15 @@ export default function CampsiteDetailPage({
 
       <Tabs defaultValue="details">
         <TabsList>
-          <TabsTrigger value="details">Details</TabsTrigger>
-          <TabsTrigger value="location">Standort</TabsTrigger>
-          <TabsTrigger value="media">Medien</TabsTrigger>
+          <TabsTrigger className="text-black" value="details">
+            Details
+          </TabsTrigger>
+          <TabsTrigger className="text-black" value="location">
+            Standort
+          </TabsTrigger>
+          <TabsTrigger className="text-black" value="media">
+            Medien
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="details" className="space-y-4">
@@ -198,6 +204,32 @@ export default function CampsiteDetailPage({
                     setEditedCampsite({
                       ...editedCampsite,
                       location: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country">Land</Label>
+                <Input
+                  id="country"
+                  value={editedCampsite.country}
+                  onChange={(e) =>
+                    setEditedCampsite({
+                      ...editedCampsite,
+                      country: e.target.value,
+                    })
+                  }
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="country_code">Ländercode</Label>
+                <Input
+                  id="country_code"
+                  value={editedCampsite.country_code}
+                  onChange={(e) =>
+                    setEditedCampsite({
+                      ...editedCampsite,
+                      country_code: e.target.value,
                     })
                   }
                 />

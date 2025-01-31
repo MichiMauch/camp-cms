@@ -6,10 +6,18 @@ import "leaflet/dist/leaflet.css";
 import { cn } from "@/lib/utils";
 
 // Define marker icon to use bus.png from public folder without shadow
-const icon = L.icon({
+const defaultIcon = L.icon({
   iconUrl: "/bus.png",
   iconRetinaUrl: "/bus.png",
   iconSize: [41, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+});
+
+const hoveredIcon = L.icon({
+  iconUrl: "/bus.png",
+  iconRetinaUrl: "/bus.png",
+  iconSize: [50, 50],
   iconAnchor: [12, 41],
   popupAnchor: [1, -34],
 });
@@ -20,6 +28,7 @@ interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
   markers?: Array<{
     position: [number, number];
     popup?: string;
+    isHovered?: boolean;
   }>;
   onMarkerDrag?: (lat: number, lng: number) => void;
   draggable?: boolean;
@@ -35,7 +44,7 @@ export function Map({
   ...props
 }: MapProps) {
   const mapRef = useRef<L.Map | null>(null);
-  const markerRef = useRef<L.Marker | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -46,45 +55,45 @@ export function Map({
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
       }).addTo(mapRef.current);
 
-      // Add markers
-      if (markers.length > 0) {
-        markers.forEach((marker) => {
-          const m = L.marker(marker.position, {
-            icon,
-            draggable,
-          }).addTo(mapRef.current!);
-
-          if (marker.popup) {
-            m.bindPopup(marker.popup);
-          }
-
-          if (draggable && onMarkerDrag) {
-            m.on("dragend", (event) => {
-              const marker = event.target;
-              const position = marker.getLatLng();
-              onMarkerDrag(position.lat, position.lng);
-            });
-          }
-
-          if (draggable) {
-            markerRef.current = m;
-          }
-        });
-      }
-
       return () => {
         mapRef.current?.remove();
       };
     }
-  }, [center, draggable, markers, onMarkerDrag, zoom]);
+  }, [center, zoom]);
 
-  // Update marker position if center changes
   useEffect(() => {
-    if (markerRef.current && mapRef.current) {
-      markerRef.current.setLatLng(center);
-      mapRef.current.setView(center);
+    if (mapRef.current) {
+      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current = markers.map((marker) => {
+        const markerIcon = marker.isHovered ? hoveredIcon : defaultIcon;
+
+        const m = L.marker(marker.position, {
+          icon: markerIcon,
+          draggable,
+        }).addTo(mapRef.current!);
+
+        if (marker.popup) {
+          m.bindPopup(marker.popup);
+        }
+
+        if (draggable && onMarkerDrag) {
+          m.on("dragend", (event) => {
+            const marker = event.target;
+            const position = marker.getLatLng();
+            onMarkerDrag(position.lat, position.lng);
+          });
+        }
+
+        if (marker.isHovered) {
+          m.setZIndexOffset(1000);
+        } else {
+          m.setZIndexOffset(0);
+        }
+
+        return m;
+      });
     }
-  }, [center]);
+  }, [markers, draggable, onMarkerDrag]);
 
   return (
     <div

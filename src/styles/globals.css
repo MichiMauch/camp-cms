@@ -1,0 +1,24 @@
+.scrollbar-thin {
+  scrollbar-width: thin;
+}
+
+.scrollbar-thumb-foreground {
+  scrollbar-color: var(--foreground) transparent;
+}
+
+.scrollbar-thumb-foreground::-webkit-scrollbar {
+  width: 8px;
+}
+
+.scrollbar-thumb-foreground::-webkit-scrollbar-thumb {
+  background-color: var(--foreground);
+  border-radius: 10px;
+}
+
+.leaflet-marker-icon {
+  transition: transform 0.3s ease;
+}
+
+.leaflet-marker-icon:hover {
+  transform: scale(2);
+}

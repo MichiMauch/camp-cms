@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
       latitude: campsite.latitude,
       longitude: campsite.longitude,
       country: campsite.country,
-      countryCode: campsite.country_code,
+      country_code: campsite.country_code, // Stelle sicher, dass das Feld korrekt zurückgegeben wird
       isoAlpha3: campsite.iso_alpha3,
       altitude: campsite.altitude,
     });
@@ -44,12 +44,12 @@ export async function PUT(request: Request, { params }: { params: { id: string }
 
     // Daten aus der Anfrage lesen
     const body = await request.json();
-    const { name, location, teaserImage, latitude, longitude } = body;
+    const { name, location, teaserImage, latitude, longitude, country, country_code } = body;
 
     // Validierung der Eingabedaten (optional)
-    if (!name || !location || !latitude || !longitude) {
+    if (!name || !location || latitude === undefined || longitude === undefined || !country || !country_code) {
       return NextResponse.json(
-        { error: "Missing required fields: name, location, latitude, or longitude" },
+        { error: "Missing required fields: name, location, latitude, longitude, country, or country_code" },
         { status: 400 }
       );
     }
@@ -58,10 +58,10 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     await db.execute({
       sql: `
         UPDATE campsites
-        SET name = ?, location = ?, teaser_image = ?, latitude = ?, longitude = ?
+        SET name = ?, location = ?, teaser_image = ?, latitude = ?, longitude = ?, country = ?, country_code = ?
         WHERE id = ?
       `,
-      args: [name, location, teaserImage, latitude, longitude, id],
+      args: [name, location, teaserImage, latitude, longitude, country, country_code, id],
     });
 
     return NextResponse.json({ success: true });

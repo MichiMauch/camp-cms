@@ -11,18 +11,19 @@ import {
 import { Menu, MapPin, BarChart3 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion, useScroll } from "framer-motion";
+import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
+import { useScrollDirection } from "../../../hooks/use-scroll-direction";
 
 const MENU_ITEMS = [
   {
     title: "Besuche",
-    href: "/",
+    href: "/alle",
     icon: Menu,
   },
   {
     title: "Plätze",
-    href: "/places",
+    href: "/plaetze",
     icon: MapPin,
   },
   {
@@ -34,24 +35,43 @@ const MENU_ITEMS = [
 
 export default function MainNav() {
   const pathname = usePathname();
-  const { scrollY } = useScroll();
+  const isVisible = useScrollDirection();
   const [isScrolled, setIsScrolled] = useState(false);
 
+  // Überwache Scroll-Position für Hintergrund-Effekt
   useEffect(() => {
-    return scrollY.onChange((latest) => {
-      setIsScrolled(latest > 50);
-    });
-  }, [scrollY]);
+    const scrollArea = document.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+
+    const handleScroll = () => {
+      if (scrollArea) {
+        setIsScrolled(scrollArea.scrollTop > 50);
+      }
+    };
+
+    scrollArea?.addEventListener("scroll", handleScroll);
+    return () => scrollArea?.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <Sheet>
       <motion.div
         className="fixed left-0 right-0 top-0 z-50 flex items-center justify-between pl-4 pr-4 py-2 md:pl-8 md:pr-8 md:py-3"
+        initial={{ backgroundColor: "rgba(30, 45, 47, 0.5)", y: 0 }}
         animate={{
           backgroundColor: isScrolled ? "#1E2D2F" : "rgba(30, 45, 47, 0.5)",
           backdropFilter: isScrolled ? "blur(10px)" : "blur(5px)",
+          y: isVisible ? 0 : -100,
         }}
-        transition={{ duration: 0.2 }}
+        transition={{
+          duration: 0.3,
+          y: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          },
+        }}
       >
         <Link href="/" className="text-xl font-bold text-[#A3E7CC]">
           WomoLog
@@ -68,7 +88,7 @@ export default function MainNav() {
       </motion.div>
       <SheetContent
         side="right"
-        className="w-full border-[#A3E7CC]/10 bg-[#1E2D2F] p-0 sm:max-w-sm"
+        className="w-full border-[#A3E7CC]/10 bg-[#1E2D2F] p-0 sm:max-w-sm z-50"
       >
         <SheetHeader className="p-6">
           <SheetTitle className="text-left text-[#A3E7CC]">Menü</SheetTitle>

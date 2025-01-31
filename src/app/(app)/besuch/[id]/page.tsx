@@ -9,6 +9,8 @@ import ActivityList from "../_components/ActivityList";
 import ParallaxImage from "../_components/ParallaxImage";
 import { useRouter } from "next/navigation";
 import MainNav from "../../_components/main-nav";
+import { useScroll, motion } from "framer-motion";
+import { useScrollDirection } from "../../../../hooks/use-scroll-direction";
 
 const BASE_IMAGE_URL = "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/";
 const DEFAULT_IMAGE_EXTENSION = ".webp";
@@ -34,6 +36,9 @@ export default function CampingDetail({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollY } = useScroll({ container: containerRef });
+  const isVisible = useScrollDirection();
+  const [isScrolled, setIsScrolled] = useState(false);
 
   useEffect(() => {
     async function fetchParams() {
@@ -81,6 +86,21 @@ export default function CampingDetail({
     return () => container?.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const scrollArea = document.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+
+    const handleScroll = () => {
+      if (scrollArea) {
+        setIsScrolled(scrollArea.scrollTop > 50);
+      }
+    };
+
+    scrollArea?.addEventListener("scroll", handleScroll);
+    return () => scrollArea?.removeEventListener("scroll", handleScroll);
+  }, []);
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -93,16 +113,27 @@ export default function CampingDetail({
 
   return (
     <div className="h-screen bg-background overflow-hidden">
-      {/* Zurück Button außerhalb des ScrollArea */}
       <MainNav />
-      <button
+      <motion.button
         onClick={() => router.back()}
-        className="fixed top-20 left-8 z-50 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-orange-500 px-4 py-2 rounded-lg transition-colors"
+        className="fixed top-[80px] left-8 z-50 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-orange-500 px-4 py-2 rounded-lg"
+        initial={{ y: 0 }}
+        animate={{
+          y: isVisible ? 0 : -100,
+        }}
+        transition={{
+          duration: 0.3,
+          y: {
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          },
+        }}
       >
         <span className="animate-pulse">← Zurück</span>
-      </button>
+      </motion.button>
 
-      <ScrollArea ref={containerRef} className="h-screen">
+      <ScrollArea ref={containerRef} className="h-screen scroll-smooth">
         <div className="relative min-h-screen">
           {/* Bild Container mit fixiertem Bild */}
           <div className="fixed top-0 left-0 w-full h-screen overflow-hidden z-0">
