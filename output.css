@@ -1476,6 +1476,12 @@ body{
   background-color: hsl(var(--card));
 }
 
+
+
+.bg-weather-box {
+  background-color: hsla(var(--card), 0.9);
+}
+
 .bg-destructive{
   background-color: hsl(var(--destructive));
 }

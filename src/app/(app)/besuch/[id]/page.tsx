@@ -8,6 +8,7 @@ import VisitDetails from "../_components/VisitDetails";
 import ActivityList from "../_components/ActivityList";
 import ParallaxImage from "../_components/ParallaxImage";
 import { useRouter } from "next/navigation";
+import MainNav from "../../_components/main-nav";
 
 const BASE_IMAGE_URL = "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/";
 const DEFAULT_IMAGE_EXTENSION = ".webp";
@@ -93,9 +94,10 @@ export default function CampingDetail({
   return (
     <div className="h-screen bg-background overflow-hidden">
       {/* Zurück Button außerhalb des ScrollArea */}
+      <MainNav />
       <button
         onClick={() => router.back()}
-        className="fixed top-8 left-8 z-50 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-orange-500 px-4 py-2 rounded-lg transition-colors"
+        className="fixed top-20 left-8 z-50 bg-background/80 backdrop-blur-sm hover:bg-background/90 text-orange-500 px-4 py-2 rounded-lg transition-colors"
       >
         <span className="animate-pulse">← Zurück</span>
       </button>

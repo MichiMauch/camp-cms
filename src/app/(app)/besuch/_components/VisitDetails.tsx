@@ -21,7 +21,10 @@ const VisitDetails: React.FC<VisitDetailsProps> = ({
   previousVisits, // Liste der vorherigen Besuche hinzugefügt
 }) => {
   return (
-    <div className="col-span-12 lg:col-span-4 lg:row-span-2 bg-card rounded-[2rem] border p-8 shadow-lg">
+    <div
+      className="col-span-12 lg:col-span-4 lg:row-span-2 rounded-[2rem] border p-8 shadow-lg"
+      style={{ backgroundColor: "rgba(31, 41, 45, 0.8)" }} // Hier die RGB-Farbe von #1F292D mit Transparenz
+    >
       <h1 className="text-4xl font-bold mb-6">{title}</h1>
       <div className="space-y-6">
         <div className="flex items-center gap-3">

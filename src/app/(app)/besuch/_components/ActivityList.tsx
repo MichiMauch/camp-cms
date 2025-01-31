@@ -245,7 +245,10 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
   }
 
   return (
-    <div className="col-span-12 bg-card rounded-[2rem] border p-8 shadow-lg relative z-10">
+    <div
+      className="col-span-12 rounded-[2rem] border p-8 shadow-lg relative z-10"
+      style={{ backgroundColor: "rgba(31, 41, 45, 0.8)" }} // Hier die RGB-Farbe von #1F292D mit Transparenz
+    >
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-semibold">Aktivitäten in der Umgebung</h2>
 

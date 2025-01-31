@@ -86,7 +86,10 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
   const icon = iconMapping[weatherIcon || ""] || "CLEAR_DAY";
 
   return (
-    <div className="col-span-12 lg:col-span-8 bg-card rounded-[2rem] border overflow-hidden shadow-lg">
+    <div
+      className="col-span-12 lg:col-span-8 rounded-[2rem] border overflow-hidden shadow-lg"
+      style={{ backgroundColor: "rgba(31, 41, 45, 0.8)" }} // Hier die RGB-Farbe von #1F292D mit Transparenz
+    >
       <div className="h-full p-8">
         <h2 className="text-2xl font-semibold mb-6">Aktuelle Wetterdaten</h2>
         <div className="space-y-6">
