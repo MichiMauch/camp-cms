@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map } from "@/components/map";
+import { Map } from "@/components/map"; // Direktimport der Map-Komponente
 import MainNav from "../_components/main-nav";
 import {
   Select,
@@ -28,7 +28,6 @@ interface Campsite {
 }
 
 function VisitedPlacesMap() {
-  // <-- Entferne das "export" hier
   const [campsites, setCampsites] = useState<Campsite[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [hoveredCampsite, setHoveredCampsite] = useState<number | null>(null);
@@ -146,7 +145,9 @@ function VisitedPlacesMap() {
             <CardTitle>Besuchte Plätze</CardTitle>
           </CardHeader>
           <CardContent className="h-full">
-            <Map center={defaultCenter} markers={visitedPlaces} zoom={8} />
+            {typeof window !== "undefined" && (
+              <Map center={defaultCenter} markers={visitedPlaces} zoom={8} />
+            )}
           </CardContent>
         </Card>
       </div>
@@ -154,4 +155,4 @@ function VisitedPlacesMap() {
   );
 }
 
-export default VisitedPlacesMap; // <-- Hier den default export setzen!
+export default VisitedPlacesMap;
