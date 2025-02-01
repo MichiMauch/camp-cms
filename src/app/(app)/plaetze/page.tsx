@@ -24,10 +24,11 @@ interface Campsite {
   latitude: number;
   longitude: number;
   country: string;
-  country_code: string; // Füge country_code hinzu
+  country_code: string;
 }
 
-export function VisitedPlacesMap() {
+function VisitedPlacesMap() {
+  // <-- Entferne das "export" hier
   const [campsites, setCampsites] = useState<Campsite[]>([]);
   const [selectedCountry, setSelectedCountry] = useState<string | null>(null);
   const [hoveredCampsite, setHoveredCampsite] = useState<number | null>(null);
@@ -45,11 +46,9 @@ export function VisitedPlacesMap() {
         console.error("Failed to fetch campsites:", error);
       }
     }
-
     fetchCampsites();
   }, []);
 
-  // Gruppiere die Campsites nach Land
   const groupedCampsites = campsites.reduce((acc, campsite) => {
     if (!acc[campsite.country]) {
       acc[campsite.country] = [];
@@ -58,12 +57,10 @@ export function VisitedPlacesMap() {
     return acc;
   }, {} as Record<string, Campsite[]>);
 
-  // Filtere die Campsites nach dem ausgewählten Land
   const filteredCampsites = selectedCountry
     ? groupedCampsites[selectedCountry] || []
     : campsites;
 
-  // Konvertiere die Campsite-Daten in das richtige Format für die Map-Komponente
   const visitedPlaces = filteredCampsites
     .filter((campsite) => campsite.latitude && campsite.longitude)
     .map((campsite) => ({
@@ -72,7 +69,6 @@ export function VisitedPlacesMap() {
       isHovered: campsite.id === hoveredCampsite,
     }));
 
-  // Berechne den Mittelpunkt für die Karte (Schweiz)
   const defaultCenter: [number, number] = [46.8182, 8.2275];
 
   return (
@@ -158,4 +154,4 @@ export function VisitedPlacesMap() {
   );
 }
 
-export default VisitedPlacesMap;
+export default VisitedPlacesMap; // <-- Hier den default export setzen!
