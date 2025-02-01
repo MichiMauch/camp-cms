@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Map } from "@/components/map"; // Direktimport der Map-Komponente
+import dynamic from "next/dynamic"; // Dynamischer Import für Map
 import MainNav from "../_components/main-nav";
 import {
   Select,
@@ -12,6 +12,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
+// Dynamischer Import der Map-Komponente
+const Map = dynamic(() => import("@/components/map").then((mod) => mod.Map), {
+  ssr: false,
+});
 
 const BASE_IMAGE_URL = "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/";
 const DEFAULT_IMAGE_EXTENSION = ".webp";
@@ -145,9 +150,7 @@ function VisitedPlacesMap() {
             <CardTitle>Besuchte Plätze</CardTitle>
           </CardHeader>
           <CardContent className="h-full">
-            {typeof window !== "undefined" && (
-              <Map center={defaultCenter} markers={visitedPlaces} zoom={8} />
-            )}
+            <Map center={defaultCenter} markers={visitedPlaces} zoom={8} />
           </CardContent>
         </Card>
       </div>

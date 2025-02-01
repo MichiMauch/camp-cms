@@ -48,15 +48,16 @@ export function Map({
 
   useEffect(() => {
     if (typeof window !== "undefined") {
-      mapRef.current = L.map("map").setView(center, zoom);
+      const map = L.map("map").setView(center, zoom);
+      mapRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
         attribution:
           '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-      }).addTo(mapRef.current);
+      }).addTo(map);
 
       return () => {
-        mapRef.current?.remove();
+        map.remove();
       };
     }
   }, [center, zoom]);
