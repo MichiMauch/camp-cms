@@ -1,4 +1,6 @@
 "use client";
+import MainNav from "../_components/main-nav";
+import { useEffect, useState } from "react";
 
 import {
   BarChart,
@@ -22,7 +24,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Tent, Calendar, Map, Car } from "lucide-react";
+import { Tent, Calendar, Map, Car, Bed, Bus, Route } from "lucide-react";
 
 // Beispieldaten
 const monthlyData = [
@@ -73,259 +75,312 @@ const recentCampsites = [
 ];
 
 export default function CampingStatistics() {
+  const [campsiteCount, setCampsiteCount] = useState(0);
+  const [visitCount, setVisitCount] = useState(0);
+  const [currentYearVisits, setCurrentYearVisits] = useState(0);
+  const [totalNights, setTotalNights] = useState(0);
+  const [currentYearNights, setCurrentYearNights] = useState(0);
+  const [currentYearCampsites, setCurrentYearCampsites] = useState(0);
+  const [distance, setDistance] = useState<{
+    total: number;
+    averagePerTrip: number;
+    currentYear: {
+      total: number;
+      averagePerTrip: number;
+    };
+  }>();
+
+  useEffect(() => {
+    async function fetchData() {
+      const response = await fetch("/api/stats");
+      const data = await response.json();
+      setVisitCount(data.totalVisits);
+      setCampsiteCount(data.totalCampsites);
+      setCurrentYearVisits(data.currentYearVisits);
+      setTotalNights(data.totalNights);
+      setCurrentYearNights(data.currentYearNights);
+      setCurrentYearCampsites(data.currentYearCampsites);
+      setDistance(data.distance);
+    }
+    fetchData();
+  }, []);
+
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <h1 className="text-3xl font-bold mb-8">Camping Statistiken</h1>
+    <>
+      <MainNav />
+      <div className="pt-16 container mx-auto p-6 space-y-6">
+        <h1 className="text-3xl font-bold mb-8">Camping Statistiken</h1>
 
-      {/* Übersichtskarten */}
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Besuchte Campingplätze
-            </CardTitle>
-            <Tent className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">55</div>
-            <p className="text-xs text-muted-foreground">12 dieses Jahr</p>
-          </CardContent>
-        </Card>
+        {/* Übersichtskarten */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Womo-Ausflüge
+              </CardTitle>
+              <Bus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{visitCount}</div>
+              <p className="text-xs text-muted-foreground">
+                {currentYearVisits} dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Gesamtnächte</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">186</div>
-            <p className="text-xs text-muted-foreground">
-              Ø 3.4 Nächte pro Besuch
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Besuchte Plätze
+              </CardTitle>
+              <Tent className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{campsiteCount}</div>
+              <p className="text-xs text-muted-foreground">
+                {currentYearCampsites} dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Besuchte Länder
-            </CardTitle>
-            <Map className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">5</div>
-            <p className="text-xs text-muted-foreground">
-              Meist besucht: Deutschland
-            </p>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Übernachtungen
+              </CardTitle>
+              <Bed className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalNights}</div>
+              <p className="text-xs text-muted-foreground">
+                Ø: {visitCount > 0 ? (totalNights / visitCount).toFixed(1) : 0}{" "}
+                Nächte, {currentYearNights} Nächte dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">
-              Gefahrene Kilometer
-            </CardTitle>
-            <Car className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">8.459</div>
-            <p className="text-xs text-muted-foreground">Ø 154 km pro Trip</p>
-          </CardContent>
-        </Card>
-      </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Gefahrene Kilometer
+              </CardTitle>
+              <Route className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {distance?.total?.toLocaleString("de-DE")}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Ø {distance?.averagePerTrip?.toLocaleString("de-DE")} km pro
+                Trip, {distance?.currentYear?.total?.toLocaleString("de-DE")} km
+                dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
+        </div>
 
-      {/* Campingplätze pro Land */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Campingplätze pro Land</CardTitle>
-          <CardDescription>
-            Anzahl der besuchten Campingplätze nach Land
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={{
-              visits: {
-                label: "Besuche",
-                color: "hsl(var(--chart-1))",
-              },
-            }}
-            className="h-[300px]"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={countryData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="country" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar dataKey="visits" fill="var(--color-visits)" />
-              </BarChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      {/* Besuche pro Monat */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Saisonale Verteilung</CardTitle>
-          <CardDescription>Anzahl der Campingbesuche pro Monat</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <ChartContainer
-            config={{
-              visits: {
-                label: "Besuche",
-                color: "hsl(var(--chart-2))",
-              },
-            }}
-            className="h-[300px]"
-          >
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={monthlyData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Line
-                  type="monotone"
-                  dataKey="visits"
-                  stroke="var(--color-visits)"
-                  strokeWidth={2}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </ChartContainer>
-        </CardContent>
-      </Card>
-
-      {/* Jahresstatistiken */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* Kilometer pro Jahr */}
+        {/* Übernachtungen */}
         <Card>
           <CardHeader>
-            <CardTitle>Kilometer pro Jahr</CardTitle>
-            <CardDescription>Jährlich zurückgelegte Strecke</CardDescription>
+            <CardTitle>Übernachtungen</CardTitle>
+            <CardDescription>
+              Gesamtanzahl der Übernachtungen im Wohnmobil
+            </CardDescription>
           </CardHeader>
-          <CardContent className="pt-4">
+          <CardContent>
             <div className="space-y-4">
-              {yearlyData.map((data, index) => (
-                <div key={index} className="flex items-center justify-between">
-                  <span className="font-medium">{data.year}</span>
-                  <span>{data.kilometers.toLocaleString()} km</span>
+              <div className="flex justify-between items-center">
+                <span>Gesamt</span>
+                <span className="text-2xl font-bold">{totalNights} Nächte</span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Dieses Jahr</span>
+                <span className="text-xl font-semibold">
+                  {currentYearNights} Nächte
+                </span>
+              </div>
+              <div className="flex justify-between items-center">
+                <span>Durchschnitt pro Besuch</span>
+                <span className="text-xl font-semibold">
+                  {visitCount > 0 ? (totalNights / visitCount).toFixed(1) : 0}{" "}
+                  Nächte
+                </span>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Besuche pro Monat */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Saisonale Verteilung</CardTitle>
+            <CardDescription>
+              Anzahl der Campingbesuche pro Monat
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ChartContainer
+              config={{
+                visits: {
+                  label: "Besuche",
+                  color: "hsl(var(--chart-2))",
+                },
+              }}
+              className="h-[300px]"
+            >
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={monthlyData}>
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <ChartTooltip content={<ChartTooltipContent />} />
+                  <Line
+                    type="monotone"
+                    dataKey="visits"
+                    stroke="var(--color-visits)"
+                    strokeWidth={2}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </ChartContainer>
+          </CardContent>
+        </Card>
+
+        {/* Jahresstatistiken */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Kilometer pro Jahr */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Kilometer pro Jahr</CardTitle>
+              <CardDescription>Jährlich zurückgelegte Strecke</CardDescription>
+            </CardHeader>
+            <CardContent className="pt-4">
+              <div className="space-y-4">
+                {yearlyData.map((data, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between"
+                  >
+                    <span className="font-medium">{data.year}</span>
+                    <span>{data.kilometers.toLocaleString("de-DE")} km</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Besuche pro Jahr */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Besuche pro Jahr</CardTitle>
+              <CardDescription>
+                Anzahl der Campingplätze pro Jahr
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  campsites: {
+                    label: "Campingplätze",
+                    color: "hsl(var(--chart-2))",
+                  },
+                }}
+                className="h-[200px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={yearlyData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar
+                      dataKey="campsites"
+                      fill="var(--color-campsites)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Letzte Besuche */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Letzte Besuche</CardTitle>
+            <CardDescription>
+              Die 5 zuletzt besuchten Campingplätze
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              {recentCampsites.map((site, index) => (
+                <div key={index} className="flex justify-between items-center">
+                  <div className="space-y-1">
+                    <p className="font-medium">{site.name}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {site.location}
+                    </p>
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {site.date}
+                  </div>
                 </div>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Besuche pro Jahr */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Besuche pro Jahr</CardTitle>
-            <CardDescription>Anzahl der Campingplätze pro Jahr</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                campsites: {
-                  label: "Campingplätze",
-                  color: "hsl(var(--chart-2))",
-                },
-              }}
-              className="h-[200px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={yearlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="year" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Bar
-                    dataKey="campsites"
-                    fill="var(--color-campsites)"
-                    radius={[4, 4, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Letzte Besuche */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Letzte Besuche</CardTitle>
-          <CardDescription>
-            Die 5 zuletzt besuchten Campingplätze
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {recentCampsites.map((site, index) => (
-              <div key={index} className="flex justify-between items-center">
-                <div className="space-y-1">
-                  <p className="font-medium">{site.name}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {site.location}
-                  </p>
+        {/* Weitere Statistiken */}
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Top Campingplätze</CardTitle>
+              <CardDescription>Am häufigsten besuchte Plätze</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Camping Waldwiese</span>
+                  <span className="font-bold">5 Besuche</span>
                 </div>
-                <div className="text-sm text-muted-foreground">{site.date}</div>
+                <div className="flex justify-between">
+                  <span>Seecamping Blau</span>
+                  <span className="font-bold">4 Besuche</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Bergcamping Höhe</span>
+                  <span className="font-bold">3 Besuche</span>
+                </div>
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
 
-      {/* Weitere Statistiken */}
-      <div className="grid gap-6 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Top Campingplätze</CardTitle>
-            <CardDescription>Am häufigsten besuchte Plätze</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Camping Waldwiese</span>
-                <span className="font-bold">5 Besuche</span>
+          <Card>
+            <CardHeader>
+              <CardTitle>Aufenthaltsdauer</CardTitle>
+              <CardDescription>Statistiken zur Verweildauer</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex justify-between">
+                  <span>Längster Aufenthalt</span>
+                  <span className="font-bold">12 Tage</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Durchschnittlicher Aufenthalt</span>
+                  <span className="font-bold">3.4 Tage</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Kürzester Aufenthalt</span>
+                  <span className="font-bold">1 Tag</span>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span>Seecamping Blau</span>
-                <span className="font-bold">4 Besuche</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Bergcamping Höhe</span>
-                <span className="font-bold">3 Besuche</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>Aufenthaltsdauer</CardTitle>
-            <CardDescription>Statistiken zur Verweildauer</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span>Längster Aufenthalt</span>
-                <span className="font-bold">12 Tage</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Durchschnittlicher Aufenthalt</span>
-                <span className="font-bold">3.4 Tage</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Kürzester Aufenthalt</span>
-                <span className="font-bold">1 Tag</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
