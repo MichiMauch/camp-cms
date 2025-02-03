@@ -50,6 +50,12 @@ const navigation: NavigationSection[] = [
         icon: PlusCircleIcon,
         current: false,
       },
+      {
+        name: "Trips und Kilometer update",
+        href: "/admin/migrate",
+        icon: PlusCircleIcon,
+        current: false,
+      },
     ],
   },
   {

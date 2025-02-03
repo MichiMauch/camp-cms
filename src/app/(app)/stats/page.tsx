@@ -1,7 +1,7 @@
 "use client";
-import MainNav from "../_components/main-nav";
-import { useEffect, useState } from "react";
 
+import { useEffect, useState } from "react";
+import MainNav from "../_components/main-nav";
 import {
   BarChart,
   Bar,
@@ -24,7 +24,7 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Tent, Calendar, Map, Car, Bed, Bus, Route } from "lucide-react";
+import { Tent, Bed, Bus, Route } from "lucide-react";
 
 // Beispieldaten
 const monthlyData = [
@@ -75,32 +75,43 @@ const recentCampsites = [
 ];
 
 export default function CampingStatistics() {
-  const [campsiteCount, setCampsiteCount] = useState(0);
-  const [visitCount, setVisitCount] = useState(0);
-  const [currentYearVisits, setCurrentYearVisits] = useState(0);
-  const [totalNights, setTotalNights] = useState(0);
-  const [currentYearNights, setCurrentYearNights] = useState(0);
-  const [currentYearCampsites, setCurrentYearCampsites] = useState(0);
-  const [distance, setDistance] = useState<{
-    total: number;
-    averagePerTrip: number;
-    currentYear: {
+  const [stats, setStats] = useState<{
+    totalVisits: number;
+    totalCampsites: number;
+    currentYearVisits: number;
+    totalNights: number;
+    currentYearNights: number;
+    currentYearCampsites: number;
+    distance: {
       total: number;
       averagePerTrip: number;
+      currentYear: {
+        total: number;
+        averagePerTrip: number;
+      };
     };
-  }>();
+  }>({
+    totalVisits: 0,
+    totalCampsites: 0,
+    currentYearVisits: 0,
+    totalNights: 0,
+    currentYearNights: 0,
+    currentYearCampsites: 0,
+    distance: {
+      total: 0,
+      averagePerTrip: 0,
+      currentYear: {
+        total: 0,
+        averagePerTrip: 0,
+      },
+    },
+  });
 
   useEffect(() => {
     async function fetchData() {
       const response = await fetch("/api/stats");
       const data = await response.json();
-      setVisitCount(data.totalVisits);
-      setCampsiteCount(data.totalCampsites);
-      setCurrentYearVisits(data.currentYearVisits);
-      setTotalNights(data.totalNights);
-      setCurrentYearNights(data.currentYearNights);
-      setCurrentYearCampsites(data.currentYearCampsites);
-      setDistance(data.distance);
+      setStats(data);
     }
     fetchData();
   }, []);
@@ -113,6 +124,26 @@ export default function CampingStatistics() {
 
         {/* Übersichtskarten */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+          {/* Gefahrene Kilometer zuerst */}
+          <Card className="md:col-span-2 lg:col-span-4">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Gefahrene Kilometer
+              </CardTitle>
+              <Route className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                {stats.distance.total.toLocaleString("de-DE")}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Ø {stats.distance.averagePerTrip.toLocaleString("de-DE")} km pro
+                Trip, {stats.distance.currentYear.total.toLocaleString("de-DE")}{" "}
+                km dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -121,9 +152,9 @@ export default function CampingStatistics() {
               <Bus className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{visitCount}</div>
+              <div className="text-2xl font-bold">{stats.totalVisits}</div>
               <p className="text-xs text-muted-foreground">
-                {currentYearVisits} dieses Jahr
+                {stats.currentYearVisits} dieses Jahr
               </p>
             </CardContent>
           </Card>
@@ -136,9 +167,9 @@ export default function CampingStatistics() {
               <Tent className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{campsiteCount}</div>
+              <div className="text-2xl font-bold">{stats.totalCampsites}</div>
               <p className="text-xs text-muted-foreground">
-                {currentYearCampsites} dieses Jahr
+                {stats.currentYearCampsites} dieses Jahr
               </p>
             </CardContent>
           </Card>
@@ -151,29 +182,13 @@ export default function CampingStatistics() {
               <Bed className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">{totalNights}</div>
+              <div className="text-2xl font-bold">{stats.totalNights}</div>
               <p className="text-xs text-muted-foreground">
-                Ø: {visitCount > 0 ? (totalNights / visitCount).toFixed(1) : 0}{" "}
-                Nächte, {currentYearNights} Nächte dieses Jahr
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Gefahrene Kilometer
-              </CardTitle>
-              <Route className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {distance?.total?.toLocaleString("de-DE")}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                Ø {distance?.averagePerTrip?.toLocaleString("de-DE")} km pro
-                Trip, {distance?.currentYear?.total?.toLocaleString("de-DE")} km
-                dieses Jahr
+                Ø{" "}
+                {stats.totalVisits > 0
+                  ? (stats.totalNights / stats.totalVisits).toFixed(1)
+                  : 0}{" "}
+                Nächte, {stats.currentYearNights} Nächte dieses Jahr
               </p>
             </CardContent>
           </Card>
@@ -191,18 +206,22 @@ export default function CampingStatistics() {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <span>Gesamt</span>
-                <span className="text-2xl font-bold">{totalNights} Nächte</span>
+                <span className="text-2xl font-bold">
+                  {stats.totalNights} Nächte
+                </span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Dieses Jahr</span>
                 <span className="text-xl font-semibold">
-                  {currentYearNights} Nächte
+                  {stats.currentYearNights} Nächte
                 </span>
               </div>
               <div className="flex justify-between items-center">
                 <span>Durchschnitt pro Besuch</span>
                 <span className="text-xl font-semibold">
-                  {visitCount > 0 ? (totalNights / visitCount).toFixed(1) : 0}{" "}
+                  {stats.totalVisits > 0
+                    ? (stats.totalNights / stats.totalVisits).toFixed(1)
+                    : 0}{" "}
                   Nächte
                 </span>
               </div>
@@ -221,10 +240,7 @@ export default function CampingStatistics() {
           <CardContent>
             <ChartContainer
               config={{
-                visits: {
-                  label: "Besuche",
-                  color: "hsl(var(--chart-2))",
-                },
+                visits: { label: "Besuche", color: "hsl(var(--chart-2))" },
               }}
               className="h-[300px]"
             >
@@ -262,7 +278,9 @@ export default function CampingStatistics() {
                     className="flex items-center justify-between"
                   >
                     <span className="font-medium">{data.year}</span>
-                    <span>{data.kilometers.toLocaleString("de-DE")} km</span>
+                    <span>
+                      {Number(data.kilometers).toLocaleString("de-DE")} km
+                    </span>
                   </div>
                 ))}
               </div>
