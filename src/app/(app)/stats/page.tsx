@@ -50,14 +50,6 @@ const countryData = [
   { country: "Niederlande", visits: 4 },
 ];
 
-const yearlyData = [
-  { year: "2019", kilometers: 4521, campsites: 8 },
-  { year: "2020", kilometers: 2890, campsites: 5 },
-  { year: "2021", kilometers: 5234, campsites: 10 },
-  { year: "2022", kilometers: 7845, campsites: 15 },
-  { year: "2023", kilometers: 8459, campsites: 17 },
-];
-
 const recentCampsites = [
   { name: "Camping am See", location: "Bayern", date: "15.10.2023" },
   { name: "Waldcamping Müller", location: "Hessen", date: "28.09.2023" },
@@ -82,6 +74,8 @@ export default function CampingStatistics() {
     totalNights: number;
     currentYearNights: number;
     currentYearCampsites: number;
+    multiVisitTrips: number;
+    yearlyDistances: Array<{ year: string; kilometers: number }>;
     distance: {
       total: number;
       averagePerTrip: number;
@@ -97,6 +91,8 @@ export default function CampingStatistics() {
     totalNights: 0,
     currentYearNights: 0,
     currentYearCampsites: 0,
+    multiVisitTrips: 0,
+    yearlyDistances: [],
     distance: {
       total: 0,
       averagePerTrip: 0,
@@ -124,26 +120,6 @@ export default function CampingStatistics() {
 
         {/* Übersichtskarten */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
-          {/* Gefahrene Kilometer zuerst */}
-          <Card className="md:col-span-2 lg:col-span-4">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">
-                Gefahrene Kilometer
-              </CardTitle>
-              <Route className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-3xl font-bold">
-                {stats.distance.total.toLocaleString("de-DE")}
-              </div>
-              <p className="text-sm text-muted-foreground">
-                Ø {stats.distance.averagePerTrip.toLocaleString("de-DE")} km pro
-                Trip, {stats.distance.currentYear.total.toLocaleString("de-DE")}{" "}
-                km dieses Jahr
-              </p>
-            </CardContent>
-          </Card>
-
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">
@@ -188,12 +164,125 @@ export default function CampingStatistics() {
                 {stats.totalVisits > 0
                   ? (stats.totalNights / stats.totalVisits).toFixed(1)
                   : 0}{" "}
-                Nächte, {stats.currentYearNights} Nächte dieses Jahr
+                Nächte, <br />
+                {stats.currentYearNights} Nächte dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
+          {/* Gefahrene Kilometer */}
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Gefahrene Kilometer
+              </CardTitle>
+              <Route className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold">
+                {stats.distance.total.toLocaleString("de-DE")}
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Ø {stats.distance.averagePerTrip.toLocaleString("de-DE")} km pro
+                Trip, <br />
+                {stats.distance.currentYear.total.toLocaleString("de-DE")} km
+                dieses Jahr
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Trips mit mehreren Besuchen{" "}
+              </CardTitle>
+              <Bus className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{stats.multiVisitTrips}</div>
+              <p className="text-xs text-muted-foreground">
+                {stats.currentYearVisits} dieses Jahr
+                <br />
               </p>
             </CardContent>
           </Card>
         </div>
+        {/* Jahresstatistiken */}
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Kilometer pro Jahr */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Kilometer pro Jahr</CardTitle>
+              <CardDescription>Jährlich zurückgelegte Strecke</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  kilometers: {
+                    label: "Kilometer",
+                    color: "hsl(var(--chart-1))",
+                  },
+                }}
+                className="h-[200px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.yearlyDistances}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar
+                      dataKey="kilometers"
+                      fill="var(--color-kilometers)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
 
+          {/* Interessante Distanz-Vergleiche */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Interessante Distanz-Vergleiche</CardTitle>
+              <CardDescription>
+                Basierend auf {stats.distance.total.toLocaleString("de-DE")}{" "}
+                gefahrenen Kilometern
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-3">
+                <div className="space-y-2">
+                  <div className="text-xl font-bold">
+                    {Math.floor(stats.distance.total / 280)} mal
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Basel - Chiasso (280 km)
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xl font-bold">
+                    {(stats.distance.total / 40075).toFixed(2)} mal
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    um die Erde (40'075 km)
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <div className="text-xl font-bold">
+                    Noch{" "}
+                    {(384400 - stats.distance.total)
+                      .toLocaleString("de-DE")
+                      .replace(/\./g, "'")}{" "}
+                    km
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    bis zum Mond (384'400 km)
+                  </p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         {/* Übernachtungen */}
         <Card>
           <CardHeader>
@@ -261,67 +350,6 @@ export default function CampingStatistics() {
             </ChartContainer>
           </CardContent>
         </Card>
-
-        {/* Jahresstatistiken */}
-        <div className="grid gap-6 md:grid-cols-2">
-          {/* Kilometer pro Jahr */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Kilometer pro Jahr</CardTitle>
-              <CardDescription>Jährlich zurückgelegte Strecke</CardDescription>
-            </CardHeader>
-            <CardContent className="pt-4">
-              <div className="space-y-4">
-                {yearlyData.map((data, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between"
-                  >
-                    <span className="font-medium">{data.year}</span>
-                    <span>
-                      {Number(data.kilometers).toLocaleString("de-DE")} km
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Besuche pro Jahr */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Besuche pro Jahr</CardTitle>
-              <CardDescription>
-                Anzahl der Campingplätze pro Jahr
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <ChartContainer
-                config={{
-                  campsites: {
-                    label: "Campingplätze",
-                    color: "hsl(var(--chart-2))",
-                  },
-                }}
-                className="h-[200px]"
-              >
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={yearlyData}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="year" />
-                    <YAxis />
-                    <ChartTooltip content={<ChartTooltipContent />} />
-                    <Bar
-                      dataKey="campsites"
-                      fill="var(--color-campsites)"
-                      radius={[4, 4, 0, 0]}
-                    />
-                  </BarChart>
-                </ResponsiveContainer>
-              </ChartContainer>
-            </CardContent>
-          </Card>
-        </div>
 
         {/* Letzte Besuche */}
         <Card>

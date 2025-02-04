@@ -129,151 +129,38 @@ export async function GET(request: Request) {
     })
     const allCampsites = allCampsitesResult.rows
 
-    // Alle Campingplätze
-    //const allCampsitesResult = await db.execute({
-    //  sql: "SELECT id, name, location, country FROM campsites",
-    //  args: [],
-    //})
-    //console.log("All Campsites Result:", allCampsitesResult)
+    // Kilometer pro Jahr
+    const yearlyDistanceResult = await db.execute({
+      sql: `
+        SELECT 
+          strftime('%Y', start_date) as year,
+          COALESCE(SUM(total_distance), 0) as total_distance
+        FROM trips
+        GROUP BY strftime('%Y', start_date)
+        ORDER BY year DESC
+      `,
+      args: [],
+    })
+    const yearlyDistances = yearlyDistanceResult.rows.map((row) => ({
+      year: row.year,
+      kilometers: Number(row.total_distance),
+    }))
 
-    //if (!allCampsitesResult?.rows) {
-    //  throw new Error("Keine Ergebnisse für all campsites gefunden")
-    //}
-    //const allCampsites = allCampsitesResult.rows
-
-    // Distanzberechnung mit verbessertem Debugging
-    //const visitsWithCoordinatesResult = await db.execute({
-    //  sql: `
-    //    SELECT
-    //      v.id,
-    //      v.date_from,
-    //      v.date_to,
-    //      v.campsite_id,
-    //      c.latitude,
-    //      c.longitude,
-    //      c.name
-    //    FROM visits v
-    //    INNER JOIN campsites c ON c.id = v.campsite_id
-    //    ORDER BY v.date_from ASC
-    //    LIMIT 3
-    //  `,
-    //  args: [],
-    //})
-
-    // Detailliertes Logging der Rohdaten
-    //console.log("Raw coordinates data:", JSON.stringify(visitsWithCoordinatesResult.rows, null, 2))
-
-    //let distance = {
-    //  total: 0,
-    //  averagePerTrip: 0,
-    //  visitedPlaces: 0,
-    //  currentYear: {
-    //    total: 0,
-    //    averagePerTrip: 0,
-    //    visitedPlaces: 0,
-    //  },
-    //}
-
-    //if (visitsWithCoordinatesResult?.rows?.length > 0) {
-    //  // Logging der Anzahl gefundener Besuche
-    //  console.log(`Found ${visitsWithCoordinatesResult.rows.length} visits with coordinates`)
-
-    //  const visits = visitsWithCoordinatesResult.rows.map((row) => {
-    //    // Logging jeder Koordinatenumwandlung
-    //    console.log(`Converting coordinates for ${row.name}:`, {
-    //      latitude: row.latitude,
-    //      longitude: row.longitude,
-    //    })
-
-    //    return {
-    //      id: Number(row.id),
-    //      date_from: String(row.date_from),
-    //      date_to: String(row.date_to),
-    //      campsite_id: Number(row.campsite_id),
-    //      latitude: Number(row.latitude),
-    //      longitude: Number(row.longitude),
-    //    }
-    //  })
-
-    //  // Logging der aufbereiteten Besuche
-    //  console.log("Prepared visits for distance calculation:", JSON.stringify(visits, null, 2))
-
-    //  try {
-    //    // Prüfe, ob der API-Key vorhanden ist
-    //    if (!process.env.OPENROUTE_API_KEY) {
-    //      console.error("OpenRoute API Key is missing!")
-    //      throw new Error("OpenRoute API Key fehlt")
-    //    }
-
-    //    const distanceStats = await calculateTotalDistance(visits)
-    //    console.log("Distance calculation result:", distanceStats)
-
-    //    distance = {
-    //      total: distanceStats.total_distance_km,
-    //      averagePerTrip: distanceStats.average_distance_per_trip_km,
-    //      visitedPlaces: distanceStats.visited_places,
-    //      currentYear: {
-    //        total: 0,
-    //        averagePerTrip: 0,
-    //        visitedPlaces: 0,
-    //      },
-    //    }
-
-    //    // Aktuelle Jahr Distanzen
-    //    const currentYearVisitsWithCoordinatesResult = await db.execute({
-    //      sql: `
-    //        SELECT
-    //          v.id,
-    //          v.date_from,
-    //          v.date_to,
-    //          v.campsite_id,
-    //          c.latitude,
-    //          c.longitude,
-    //          c.name
-    //        FROM visits v
-    //        INNER JOIN campsites c ON c.id = v.campsite_id
-    //        WHERE strftime('%Y', date(v.date_from)) = strftime('%Y', 'now')
-    //        OR strftime('%Y', date(v.date_to)) = strftime('%Y', 'now')
-    //        ORDER BY v.date_from ASC
-    //        LIMIT 3
-    //      `,
-    //      args: [],
-    //    })
-
-    //    // Logging der aktuellen Jahres-Rohdaten
-    //    console.log("Current year raw data:", JSON.stringify(currentYearVisitsWithCoordinatesResult.rows, null, 2))
-
-    //    if (currentYearVisitsWithCoordinatesResult?.rows?.length > 0) {
-    //      console.log(`Found ${currentYearVisitsWithCoordinatesResult.rows.length} visits for current year`)
-
-    //      const currentYearVisits = currentYearVisitsWithCoordinatesResult.rows.map((row) => ({
-    //        id: Number(row.id),
-    //        date_from: String(row.date_from),
-    //        date_to: String(row.date_to),
-    //        campsite_id: Number(row.campsite_id),
-    //        latitude: Number(row.latitude),
-    //        longitude: Number(row.longitude),
-    //      }))
-
-    //      const currentYearDistanceStats = await calculateTotalDistance(currentYearVisits)
-    //      console.log("Current year distance calculation result:", currentYearDistanceStats)
-
-    //      distance.currentYear = {
-    //        total: currentYearDistanceStats.total_distance_km,
-    //        averagePerTrip: currentYearDistanceStats.average_distance_per_trip_km,
-    //        visitedPlaces: currentYearDistanceStats.visited_places,
-    //      }
-    //    }
-    //  } catch (error) {
-    //    console.error("Error in distance calculation:", error)
-    //    if (error instanceof Error) {
-    //      console.error("Error details:", error.message)
-    //      console.error("Error stack:", error.stack)
-    //    }
-    //  }
-    //} else {
-    //  console.log("No visits with coordinates found")
-    //}
+    // Neue Abfrage: Trips mit mehreren Besuchen
+    const multiVisitTripsResult = await db.execute({
+      sql: `
+        SELECT COUNT(*) as count
+        FROM (
+          SELECT trip_id
+          FROM visits
+          WHERE trip_id IS NOT NULL
+          GROUP BY trip_id
+          HAVING COUNT(*) > 1
+        ) multi_visit_trips
+      `,
+      args: [],
+    })
+    const multiVisitTrips = Number(multiVisitTripsResult.rows[0].count)
 
     // Final response
     return NextResponse.json({
@@ -284,6 +171,7 @@ export async function GET(request: Request) {
       allCampsites,
       totalNights,
       currentYearNights,
+      multiVisitTrips,
       distance: {
         total: totalDistance,
         averagePerTrip: averageDistance,
@@ -292,6 +180,7 @@ export async function GET(request: Request) {
           averagePerTrip: currentYearAverageDistance,
         },
       },
+      yearlyDistances,
     })
   } catch (error) {
     console.error("Error in route handler:", error)

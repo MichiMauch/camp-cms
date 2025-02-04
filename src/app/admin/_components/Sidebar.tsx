@@ -56,6 +56,12 @@ const navigation: NavigationSection[] = [
         icon: PlusCircleIcon,
         current: false,
       },
+      {
+        name: "Trips Verwaltung",
+        href: "/admin/trips",
+        icon: PlusCircleIcon,
+        current: false,
+      },
     ],
   },
   {
