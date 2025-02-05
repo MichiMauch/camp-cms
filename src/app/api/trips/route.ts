@@ -5,90 +5,82 @@ export async function GET(request: Request) {
   try {
     const tripsResult = await db.execute({
       sql: `
-        WITH VisitCounts AS (
+        WITH CampsiteCounts AS (
           SELECT 
             t.id,
-            t.name,
-            t.start_date,
-            t.end_date,
-            t.total_distance,
-            COUNT(v.id) as visit_count,
-            GROUP_CONCAT(v.id, '||') as visit_ids,
-            GROUP_CONCAT(c.name, '||') as campsite_names,
-            GROUP_CONCAT(v.date_from, '||') as visit_dates
+            COUNT(DISTINCT v.campsite_id) as unique_campsite_count
           FROM trips t
           LEFT JOIN visits v ON v.trip_id = t.id
-          LEFT JOIN campsites c ON v.campsite_id = c.id
           GROUP BY t.id
-          HAVING COUNT(v.id) > 1
-          ORDER BY t.start_date DESC
+          HAVING unique_campsite_count > 1
         )
         SELECT 
-          id,
-          name,
-          start_date,
-          end_date,
-          total_distance,
-          visit_count,
-          visit_ids,
-          campsite_names,
-          visit_dates
-        FROM VisitCounts
+          t.id,
+          t.name,
+          t.start_date,
+          t.end_date,
+          t.total_distance,
+          COUNT(v.id) as visit_count,
+          GROUP_CONCAT(v.id) as visit_ids,
+          GROUP_CONCAT(c.name) as campsite_names,
+          GROUP_CONCAT(v.date_from) as visit_dates,
+          GROUP_CONCAT(v.visit_image) as teaser_images
+        FROM trips t
+        INNER JOIN CampsiteCounts cc ON cc.id = t.id
+        LEFT JOIN visits v ON v.trip_id = t.id
+        LEFT JOIN campsites c ON v.campsite_id = c.id
+        WHERE 
+          t.start_date IS NOT NULL 
+          AND t.end_date IS NOT NULL
+          AND date(t.end_date) >= date(t.start_date)
+        GROUP BY t.id
+        ORDER BY date(t.start_date) DESC
       `,
       args: [],
     })
 
-    const trips = tripsResult.rows.map((trip) => {
-      // Extrahiere die Arrays aus den konkatenierte Strings
-      const visitDates = (trip.visit_dates as string).split("||")
-      const campsiteNames = (trip.campsite_names as string).split("||")
-      const visitIds = (trip.visit_ids as string).split("||").map(Number)
+    console.log("Trips Result:", tripsResult); // Debug-Ausgabe
 
-      // Erstelle ein Array von Objekten mit Datum und Name
-      const visits = visitDates.map((date, index) => ({
-        date,
-        name: campsiteNames[index],
-        id: visitIds[index],
-      }))
-
-      // Sortiere die Besuche nach Datum
-      visits.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-
-      return {
-        id: trip.id,
-        name: trip.name as string | null,
-        start_date: trip.start_date,
-        end_date: trip.end_date,
-        total_distance: Number(trip.total_distance),
-        visit_count: Number(trip.visit_count),
-        visit_ids: visits.map((v) => v.id),
-        campsite_names: visits.map((v) => v.name),
-      }
-    })
+    const trips = tripsResult.rows.map((trip) => ({
+      id: trip.id,
+      name: trip.name,
+      start_date: trip.start_date,
+      end_date: trip.end_date,
+      total_distance: Number(trip.total_distance),
+      visit_count: Number(trip.visit_count),
+      campsite_names: String(trip.campsite_names || "").split(",").join("||"),
+      visit_dates: String(trip.visit_dates || "").split(",").join("||"),
+      teaser_images: trip.teaser_images ? String(trip.teaser_images).split(",") : []
+    }))
 
     return NextResponse.json({ trips })
   } catch (error) {
-    console.error("Error fetching trips:", error)
+    console.error("Error fetching trips:", error instanceof Error ? error.message : error)
     return NextResponse.json({ error: "Fehler beim Abrufen der Trips" }, { status: 500 })
   }
 }
 
 export async function PUT(request: Request) {
   try {
-    const { id, name } = await request.json()
+    const body = await request.json()
+    const { id, name } = body
 
     if (!id || typeof name !== "string") {
-      return NextResponse.json({ error: "Ungültige Eingabedaten" }, { status: 400 })
+      return NextResponse.json({ error: "ID und Name sind erforderlich" }, { status: 400 })
     }
 
     await db.execute({
-      sql: `UPDATE trips SET name = ? WHERE id = ?`,
+      sql: `
+        UPDATE trips 
+        SET name = ?
+        WHERE id = ?
+      `,
       args: [name, id],
     })
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error updating trip:", error)
+    console.error("Error updating trip:", error instanceof Error ? error.message : error)
     return NextResponse.json({ error: "Fehler beim Aktualisieren des Trips" }, { status: 500 })
   }
 }

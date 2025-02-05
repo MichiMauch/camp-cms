@@ -23,8 +23,9 @@ interface Trip {
   end_date: string;
   total_distance: number;
   visit_count: number;
-  visit_ids: number[];
-  campsite_names: string[];
+  visit_ids: string; // Geändert zu string, da es als GROUP_CONCAT String zurückkommt
+  campsite_names: string; // Geändert zu string, da es als GROUP_CONCAT String zurückkommt
+  visit_dates: string; // Hinzugefügt, da es in der API zurückgegeben wird
 }
 
 function formatDate(dateString: string) {
@@ -84,7 +85,6 @@ export default function TripsPage() {
 
       if (!response.ok) throw new Error("Fehler beim Speichern");
 
-      // Aktualisiere die lokale Trip-Liste
       setTrips(
         trips.map((trip) =>
           trip.id === id ? { ...trip, name: editingName } : trip
@@ -93,7 +93,6 @@ export default function TripsPage() {
       setEditingId(null);
       setEditingName("");
 
-      // Zeige Erfolgs-Toast
       toast({
         title: "Erfolgreich gespeichert",
         description: `Der Name wurde erfolgreich aktualisiert.`,
@@ -101,7 +100,6 @@ export default function TripsPage() {
       });
     } catch (err) {
       console.error("Fehler beim Speichern:", err);
-      // Zeige Fehler-Toast
       toast({
         title: "Fehler beim Speichern",
         description: "Der Name konnte nicht gespeichert werden.",
@@ -116,18 +114,15 @@ export default function TripsPage() {
     setEditingName(trip.name || "");
   }
 
-  // Funktion zum Abbrechen der Bearbeitung
   function handleCancel() {
     setEditingId(null);
     setEditingName("");
   }
 
-  // Tastatur-Handler für das Input-Feld
   function handleKeyDown(
     e: React.KeyboardEvent<HTMLInputElement>,
     tripId: number
   ) {
-    //React.KeyboardEvent<HTMLInputElement> added here
     if (e.key === "Enter") {
       handleSave(tripId);
     } else if (e.key === "Escape") {
@@ -211,11 +206,14 @@ export default function TripsPage() {
                   <TableCell>{trip.visit_count}</TableCell>
                   <TableCell>
                     <div className="text-sm">
-                      {trip.campsite_names.map((name, index) => (
-                        <div key={index} className="text-muted-foreground">
-                          {index + 1}. {name}
-                        </div>
-                      ))}
+                      {trip.campsite_names
+                        ?.split("||")
+                        .filter(Boolean)
+                        .map((name, index) => (
+                          <div key={index} className="text-muted-foreground">
+                            {index + 1}. {name}
+                          </div>
+                        ))}
                     </div>
                   </TableCell>
                 </TableRow>

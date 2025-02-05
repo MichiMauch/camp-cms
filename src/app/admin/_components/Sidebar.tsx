@@ -42,7 +42,7 @@ const navigation: NavigationSection[] = [
     ],
   },
   {
-    title: "Hinzufügen",
+    title: "Administration",
     items: [
       {
         name: "Besuch erfassen",

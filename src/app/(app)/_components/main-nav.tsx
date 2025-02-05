@@ -27,6 +27,11 @@ const MENU_ITEMS = [
     icon: MapPin,
   },
   {
+    title: "Trips",
+    href: "/trips",
+    icon: MapPin,
+  },
+  {
     title: "Statistik",
     href: "/stats",
     icon: BarChart3,
