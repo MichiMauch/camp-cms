@@ -416,7 +416,7 @@ export default function CampingStatistics() {
                 </div>
                 <div className="flex justify-between">
                   <span>Durchschnittlicher Aufenthalt</span>
-                  <span className="font-bold">3.4 Tage</span>
+                  <span className="font-bold">3.5 Tage</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Kürzester Aufenthalt</span>
