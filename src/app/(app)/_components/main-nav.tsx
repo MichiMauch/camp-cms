@@ -8,7 +8,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, MapPin, BarChart3 } from "lucide-react";
+import { Menu, MapPin, BarChart3, HomeIcon, CaravanIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
@@ -16,6 +16,11 @@ import { useEffect, useState } from "react";
 import { useScrollDirection } from "../../../hooks/use-scroll-direction";
 
 const MENU_ITEMS = [
+  {
+    title: "Ab nach Hause",
+    href: "/",
+    icon: HomeIcon,
+  },
   {
     title: "Besuche",
     href: "/alle",
@@ -29,7 +34,7 @@ const MENU_ITEMS = [
   {
     title: "Trips",
     href: "/trips",
-    icon: MapPin,
+    icon: CaravanIcon,
   },
   {
     title: "Statistik",
