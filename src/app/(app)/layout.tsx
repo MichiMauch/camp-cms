@@ -13,8 +13,34 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "WomoLog",
-  description: "Dein digitales Wohnmobil Logbuch",
+  title: "WomoLog - Das Logbuch - CampCMS",
+  description:
+    "Unser digitales Wohnmobil Logbuch! Vielleicht auch eine kleine Inspiration für dich?",
+  openGraph: {
+    title: "WomoLog - Das Logbuch - CampCMS",
+    description:
+      "Unser digitales Wohnmobil Logbuch! Vielleicht auch eine kleine Inspiration für dich?",
+    url: "https://womolog.ch",
+    siteName: "WomoLog",
+    images: [
+      {
+        url: "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/IMG_20210530_112044.webp&w=1920&q=75",
+        width: 1920,
+        height: 1080,
+        alt: "WomoLog Wohnmobil Logbuch",
+      },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "WomoLog - Das Logbuch - CampCMS",
+    description:
+      "Unser digitales Wohnmobil Logbuch! Vielleicht auch eine kleine Inspiration für dich?",
+    images: [
+      "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/IMG_20210530_112044.webp&w=1920&q=75",
+    ],
+  },
 };
 
 export default function RootLayout({
