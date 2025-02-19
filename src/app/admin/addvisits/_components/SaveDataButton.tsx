@@ -1,9 +1,20 @@
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+
+interface Campsite {
+  id: string;
+  name: string;
+  location: string;
+  teaser_image?: string;
+  latitude: number;
+  longitude: number;
+  country?: string;
+  country_code?: string;
+}
 
 interface SaveDataButtonProps {
   exifData: {
@@ -18,23 +29,25 @@ interface SaveDataButtonProps {
       state?: string;
       country?: string;
       country_code?: string;
-      iso_alpha3?: string;
-      [key: string]: unknown;
     };
-  } | null;
+  };
   endDate: string;
   fileName: string;
   imageFile?: File;
   setError: (error: string) => void;
+  placeType: "new" | "existing";
+  selectedPlace: Campsite | null;
 }
 
-const SaveDataButton: React.FC<SaveDataButtonProps> = ({
+export default function SaveDataButton({
   exifData,
   endDate,
   fileName,
   imageFile,
   setError,
-}) => {
+  placeType,
+  selectedPlace,
+}: SaveDataButtonProps) {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
@@ -56,9 +69,28 @@ const SaveDataButton: React.FC<SaveDataButtonProps> = ({
     return filename;
   };
 
+  const formatDate = (dateString: string) => {
+    // Überprüfe, ob das Datum bereits im Format DD.MM.YYYY ist
+    if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateString)) {
+      return dateString;
+    }
+
+    // Wenn es ein ISO-String ist, konvertiere ihn
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+  };
+
   const saveData = async () => {
     if (!exifData || !exifData.address) {
       setError("EXIF-Daten sind unvollständig.");
+      return;
+    }
+
+    if (placeType === "existing" && !selectedPlace) {
+      setError("Bitte wählen Sie einen bestehenden Platz aus.");
       return;
     }
 
@@ -83,17 +115,41 @@ const SaveDataButton: React.FC<SaveDataButtonProps> = ({
         }
       }
 
-      // Sende die Daten an die API
+      // Format dates
+      const formattedModifyDate = formatDate(exifData.modifyDate);
+      const formattedEndDate = formatDate(endDate);
+
+      // Prepare the data based on placeType
+      const visitData = {
+        exifData: {
+          ...exifData,
+          modifyDate: formattedModifyDate,
+          address:
+            placeType === "existing"
+              ? {
+                  ...exifData.address,
+                  tourism: selectedPlace?.name,
+                  village: selectedPlace?.location,
+                  country: selectedPlace?.country,
+                  country_code: selectedPlace?.country_code,
+                }
+              : exifData.address,
+        },
+        endDate: formattedEndDate,
+        fileName: savedFileName,
+        placeType,
+        campsiteId: selectedPlace?.id,
+      };
+
+      console.log("Sending data to API:", JSON.stringify(visitData, null, 2));
+
+      // Send the data to the API
       const response = await fetch("/api/visits", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          exifData,
-          endDate,
-          fileName: savedFileName,
-        }),
+        body: JSON.stringify(visitData),
       });
 
       if (!response.ok) {
@@ -108,7 +164,9 @@ const SaveDataButton: React.FC<SaveDataButtonProps> = ({
       });
     } catch (err) {
       console.error("Fehler beim Speichern der Daten:", err);
-      setError("Fehler beim Speichern der Daten.");
+      setError(
+        err instanceof Error ? err.message : "Fehler beim Speichern der Daten."
+      );
       toast({
         variant: "destructive",
         title: "Fehler",
@@ -135,6 +193,4 @@ const SaveDataButton: React.FC<SaveDataButtonProps> = ({
       )}
     </Button>
   );
-};
-
-export default SaveDataButton;
+}

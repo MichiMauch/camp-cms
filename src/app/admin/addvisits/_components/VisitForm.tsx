@@ -1,11 +1,55 @@
-import { VisitFormProps } from "../_types/upload-visit";
-import { DatePicker } from "./DatePicker";
-import SaveDataButton from "./SaveDataButton";
-import { format } from "date-fns";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+"use client";
+
+import React from "react";
+import { PlaceSelect } from "./PlaceSelect";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Label } from "@/components/ui/label";
+import { Input } from "@/components/ui/input";
+import { DatePicker } from "./DatePicker";
 import Image from "next/image";
+import SaveDataButton from "./SaveDataButton";
+
+interface Campsite {
+  id: string;
+  name: string;
+  location: string;
+  teaser_image?: string;
+  latitude: number;
+  longitude: number;
+  country?: string;
+  country_code?: string;
+}
+
+interface ExifData {
+  modifyDate: string;
+  gpsAltitude: number;
+  latitude: number;
+  longitude: number;
+  address?: {
+    display_name: string;
+    tourism?: string;
+    village?: string;
+    state?: string;
+    country?: string;
+    country_code?: string;
+  };
+}
+
+interface VisitFormProps {
+  exifData: ExifData;
+  startDate: Date;
+  endDate: Date;
+  fileName: string;
+  imageUrl?: string;
+  imageFile?: File;
+  onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onAddressInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onFileNameChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  onStartDateChange: (date: Date | undefined) => void;
+  onEndDateChange: (date: Date | undefined) => void;
+  onExifDataChange?: (data: ExifData) => void; // Make this optional
+}
 
 export function VisitForm({
   exifData,
@@ -13,13 +57,55 @@ export function VisitForm({
   endDate,
   fileName,
   imageUrl,
-  imageFile, // Add this prop
+  imageFile,
   onInputChange,
   onAddressInputChange,
   onFileNameChange,
   onStartDateChange,
   onEndDateChange,
+  onExifDataChange = () => {}, // Provide default empty function
 }: VisitFormProps) {
+  const [placeType, setPlaceType] = React.useState<"new" | "existing">("new");
+  const [error, setError] = React.useState<string | null>(null);
+  const [selectedPlace, setSelectedPlace] = React.useState<Campsite | null>(
+    null
+  );
+  const [localExifData, setLocalExifData] = React.useState<ExifData>(exifData); // Add local state
+
+  // Update local state when props change
+  React.useEffect(() => {
+    setLocalExifData(exifData);
+  }, [exifData]);
+
+  const handlePlaceSelect = (place: Campsite | null) => {
+    setSelectedPlace(place);
+    if (place) {
+      // Aktualisiere die Formulardaten mit den ausgewählten Platzdaten
+      const updatedExifData = {
+        ...localExifData,
+        latitude: place.latitude,
+        longitude: place.longitude,
+        address: {
+          ...localExifData.address,
+          display_name: localExifData.address?.display_name || "",
+          tourism: place.name,
+          village: place.location,
+          country: place.country,
+          country_code: place.country_code,
+        },
+      };
+      setLocalExifData(updatedExifData); // Update local state
+      onExifDataChange?.(updatedExifData); // Optional chaining for safety
+    }
+  };
+
+  // Reset selectedPlace when switching to "new"
+  React.useEffect(() => {
+    if (placeType === "new") {
+      setSelectedPlace(null);
+    }
+  }, [placeType]);
+
   return (
     <div className="space-y-6">
       <Card>
@@ -39,6 +125,35 @@ export function VisitForm({
                 />
               </div>
 
+              <div className="space-y-4">
+                <Label>Platz</Label>
+                <RadioGroup
+                  defaultValue="new"
+                  value={placeType}
+                  onValueChange={(value) =>
+                    setPlaceType(value as "new" | "existing")
+                  }
+                  className="flex flex-col space-y-1"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="new" id="new" />
+                    <Label htmlFor="new">Neuer Platz</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="existing" id="existing" />
+                    <Label htmlFor="existing">Bestehender Platz</Label>
+                  </div>
+                </RadioGroup>
+
+                {placeType === "existing" && (
+                  <PlaceSelect
+                    onPlaceSelect={handlePlaceSelect}
+                    selectedPlace={selectedPlace}
+                    className="mt-2"
+                  />
+                )}
+              </div>
+
               <div className="grid grid-cols-1 gap-4">
                 <div className="grid w-full items-center gap-1.5">
                   <Label htmlFor="startDate">Datum von</Label>
@@ -54,7 +169,7 @@ export function VisitForm({
             {imageUrl && (
               <div className="relative aspect-square w-full overflow-hidden rounded-lg border border-border">
                 <Image
-                  src={imageUrl}
+                  src={imageUrl || "/placeholder.svg"}
                   alt="Hochgeladenes Bild"
                   fill
                   className="object-cover"
@@ -66,6 +181,7 @@ export function VisitForm({
         </CardContent>
       </Card>
 
+      {/* GPS Daten Card */}
       <Card>
         <CardHeader>
           <CardTitle>GPS Daten</CardTitle>
@@ -78,8 +194,9 @@ export function VisitForm({
                 id="gpsAltitude"
                 type="number"
                 name="gpsAltitude"
-                value={exifData.gpsAltitude}
+                value={localExifData.gpsAltitude}
                 onChange={onInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
@@ -88,8 +205,9 @@ export function VisitForm({
                 id="latitude"
                 type="number"
                 name="latitude"
-                value={exifData.latitude}
+                value={localExifData.latitude}
                 onChange={onInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
@@ -98,14 +216,16 @@ export function VisitForm({
                 id="longitude"
                 type="number"
                 name="longitude"
-                value={exifData.longitude}
+                value={localExifData.longitude}
                 onChange={onInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {/* Standort Details Card */}
       <Card>
         <CardHeader>
           <CardTitle>Standort Details</CardTitle>
@@ -117,8 +237,9 @@ export function VisitForm({
               <Input
                 id="tourism"
                 name="tourism"
-                value={exifData.address?.tourism || ""}
+                value={localExifData.address?.tourism || ""}
                 onChange={onAddressInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
@@ -126,8 +247,9 @@ export function VisitForm({
               <Input
                 id="village"
                 name="village"
-                value={exifData.address?.village || ""}
+                value={localExifData.address?.village || ""}
                 onChange={onAddressInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
           </div>
@@ -138,8 +260,9 @@ export function VisitForm({
               <Input
                 id="state"
                 name="state"
-                value={exifData.address?.state || ""}
+                value={localExifData.address?.state || ""}
                 onChange={onAddressInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
@@ -147,8 +270,9 @@ export function VisitForm({
               <Input
                 id="country"
                 name="country"
-                value={exifData.address?.country || ""}
+                value={localExifData.address?.country || ""}
                 onChange={onAddressInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
             <div className="grid w-full items-center gap-1.5">
@@ -156,8 +280,9 @@ export function VisitForm({
               <Input
                 id="country_code"
                 name="country_code"
-                value={exifData.address?.country_code || ""}
+                value={localExifData.address?.country_code || ""}
                 onChange={onAddressInputChange}
+                disabled={placeType === "existing"}
               />
             </div>
           </div>
@@ -165,12 +290,16 @@ export function VisitForm({
       </Card>
 
       <SaveDataButton
-        exifData={exifData}
-        endDate={format(endDate, "dd.MM.yyyy")}
+        exifData={localExifData}
+        endDate={endDate.toISOString().split("T")[0]}
         fileName={fileName}
-        imageFile={imageFile} // Pass the imageFile prop
-        setError={() => {}}
+        imageFile={imageFile}
+        setError={setError}
+        placeType={placeType}
+        selectedPlace={selectedPlace}
       />
+
+      {error && <p className="text-red-500 mt-2">{error}</p>}
     </div>
   );
 }

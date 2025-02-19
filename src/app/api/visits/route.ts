@@ -1,11 +1,16 @@
-import { NextResponse } from "next/server";
-import { db } from "@/lib/turso";
+import { NextResponse } from "next/server"
+import { db } from "@/lib/turso"
 
 // Hilfsfunktion zur Datumsformatierung
 function formatDateForDB(dateStr: string) {
-  const [day, month, year] = dateStr.split(".");
-  if (!day || !month || !year) throw new Error("Ungültiges Datumsformat");
-  return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`;
+  try {
+    const [day, month, year] = dateStr.split(".")
+    if (!day || !month || !year) throw new Error("Ungültiges Datumsformat")
+    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+  } catch (error) {
+    console.error("Date formatting error:", error, "for date:", dateStr)
+    throw new Error(`Ungültiges Datumsformat: ${dateStr}`)
+  }
 }
 
 export async function GET() {
@@ -22,8 +27,8 @@ export async function GET() {
         JOIN campsites c ON v.campsite_id = c.id
         ORDER BY DATE(v.date_from) DESC
       `,
-      args: []
-    });
+      args: [],
+    })
 
     const visits = result.rows.map((row) => ({
       id: row.id,
@@ -31,77 +36,112 @@ export async function GET() {
       dateTo: row.dateTo,
       campsiteName: row.campsiteName,
       teaserImage: row.teaserImage,
-    }));
+    }))
 
-    return NextResponse.json(visits);
+    return NextResponse.json(visits)
   } catch (error) {
-    console.error("Error fetching visits:", error);
-    return NextResponse.json(
-      { error: "Fehler beim Laden der Besuche" },
-      { status: 500 }
-    );
+    console.error("Error fetching visits:", error)
+    return NextResponse.json({ error: "Fehler beim Laden der Besuche" }, { status: 500 })
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
-    const { exifData, endDate, fileName } = data;
+    const data = await request.json()
+    console.log("Received data:", JSON.stringify(data, null, 2))
+
+    const { exifData, endDate, fileName, placeType, campsiteId } = data
 
     if (!exifData || !exifData.address) {
-      return NextResponse.json(
-        { error: "EXIF-Daten sind unvollständig." },
-        { status: 400 }
-      );
+      console.error("Missing exifData or address")
+      return NextResponse.json({ error: "EXIF-Daten sind unvollständig." }, { status: 400 })
     }
+
+    console.log("Processing dates:", {
+      modifyDate: exifData.modifyDate,
+      endDate: endDate,
+    })
 
     // Formatiere die Daten
-    const formattedStartDate = formatDateForDB(exifData.modifyDate);
-    const formattedEndDate = formatDateForDB(endDate);
+    const formattedStartDate = formatDateForDB(exifData.modifyDate)
+    const formattedEndDate = formatDateForDB(endDate)
 
-    // Überprüfe, ob der Platz bereits existiert
-    const existingCampsite = await db.execute({
-      sql: "SELECT * FROM campsites WHERE name = ?",
-      args: [exifData.address.tourism]
-    });
+    console.log("Formatted dates:", {
+      formattedStartDate,
+      formattedEndDate,
+    })
 
-    let campsiteId;
-    if (existingCampsite.rows.length > 0) {
-      campsiteId = existingCampsite.rows[0].id;
+    let finalCampsiteId: string
+
+    if (placeType === "existing") {
+      if (!campsiteId) {
+        console.error("No campsiteId provided for existing place")
+        return NextResponse.json({ error: "Keine Campingplatz-ID für bestehenden Platz" }, { status: 400 })
+      }
+      finalCampsiteId = campsiteId
+      console.log("Using existing campsite:", finalCampsiteId)
     } else {
-      // Füge einen neuen Eintrag in die Tabelle `campsites` ein
-      const newCampsite = await db.execute({
-        sql: `
-          INSERT INTO campsites (
-            name, 
-            location, 
-            teaser_image, 
-            latitude, 
-            longitude, 
-            country, 
-            state, 
-            country_code, 
-            altitude, 
-            iso_alpha3
-          )
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-          RETURNING id
-        `,
-        args: [
-          exifData.address.tourism,
-          exifData.address.village,
-          fileName,
-          exifData.latitude,
-          exifData.longitude,
-          exifData.address.country,
-          exifData.address.state,
-          exifData.address.country_code,
-          exifData.gpsAltitude,
-          exifData.address.iso_alpha3
-        ]
-      });
-      campsiteId = newCampsite.rows[0].id;
+      console.log("Checking for existing campsite:", {
+        name: exifData.address.tourism,
+        location: exifData.address.village,
+      })
+
+      // Überprüfe, ob der Platz bereits existiert
+      const existingCampsite = await db.execute({
+        sql: "SELECT id FROM campsites WHERE name = ? AND location = ?",
+        args: [exifData.address.tourism, exifData.address.village],
+      })
+
+      if (existingCampsite.rows.length > 0) {
+        finalCampsiteId = existingCampsite.rows[0].id as string
+        console.log("Found existing campsite:", finalCampsiteId)
+      } else {
+        console.log("Creating new campsite with data:", {
+          name: exifData.address.tourism,
+          location: exifData.address.village,
+          // ... other fields
+        })
+
+        // Füge einen neuen Eintrag in die Tabelle `campsites` ein
+        const newCampsite = await db.execute({
+          sql: `
+            INSERT INTO campsites (
+              name, 
+              location, 
+              teaser_image, 
+              latitude, 
+              longitude, 
+              country, 
+              state, 
+              country_code, 
+              altitude
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            RETURNING id
+          `,
+          args: [
+            exifData.address.tourism,
+            exifData.address.village,
+            fileName,
+            exifData.latitude,
+            exifData.longitude,
+            exifData.address.country,
+            exifData.address.state,
+            exifData.address.country_code,
+            exifData.gpsAltitude,
+          ],
+        })
+        finalCampsiteId = newCampsite.rows[0].id as string
+        console.log("Created new campsite:", finalCampsiteId)
+      }
     }
+
+    console.log("Inserting visit with data:", {
+      campsiteId: finalCampsiteId,
+      dateFrom: formattedStartDate,
+      dateTo: formattedEndDate,
+      fileName,
+    })
 
     // Füge einen neuen Eintrag in die Tabelle `visits` ein
     await db.execute({
@@ -114,50 +154,45 @@ export async function POST(request: Request) {
         )
         VALUES (?, ?, ?, ?)
       `,
-      args: [campsiteId, formattedStartDate, formattedEndDate, fileName]
-    });
+      args: [finalCampsiteId, formattedStartDate, formattedEndDate, fileName],
+    })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: "Besuch wurde erfolgreich gespeichert" 
-    });
+      message: "Besuch wurde erfolgreich gespeichert",
+    })
   } catch (error) {
-    console.error("Error saving visit:", error);
+    console.error("Detailed error:", error)
     return NextResponse.json(
-      { error: "Fehler beim Speichern des Besuchs" },
-      { status: 500 }
-    );
+      {
+        error: error instanceof Error ? error.message : "Fehler beim Speichern des Besuchs",
+      },
+      { status: 500 },
+    )
   }
 }
 
-// Optional: DELETE Handler für das Löschen von Besuchen
 export async function DELETE(request: Request) {
   try {
-    const { searchParams } = new URL(request.url);
-    const id = searchParams.get('id');
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get("id")
 
     if (!id) {
-      return NextResponse.json(
-        { error: "Keine Besuchs-ID angegeben" },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Keine Besuchs-ID angegeben" }, { status: 400 })
     }
 
     await db.execute({
       sql: "DELETE FROM visits WHERE id = ?",
-      args: [id]
-    });
+      args: [id],
+    })
 
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
-      message: "Besuch wurde erfolgreich gelöscht" 
-    });
+      message: "Besuch wurde erfolgreich gelöscht",
+    })
   } catch (error) {
-    console.error("Error deleting visit:", error);
-    return NextResponse.json(
-      { error: "Fehler beim Löschen des Besuchs" },
-      { status: 500 }
-    );
+    console.error("Error deleting visit:", error)
+    return NextResponse.json({ error: "Fehler beim Löschen des Besuchs" }, { status: 500 })
   }
 }
 

@@ -93,7 +93,7 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
               <span>{location}</span>
             </div>
             <div className="flex gap-4">
-              <Link href={`/entry/${id}`}>
+              <Link href={`/besuch/${id}`}>
                 <Button
                   size="lg"
                   className="gap-2 bg-[#FF6B00] text-white hover:bg-[#FF6B00]/90"

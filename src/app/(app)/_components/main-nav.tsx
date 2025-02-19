@@ -8,7 +8,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { Menu, MapPin, BarChart3, HomeIcon, CaravanIcon } from "lucide-react";
+import { Menu, MapPin, BarChart3, HomeIcon, CaravanIcon,  } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
