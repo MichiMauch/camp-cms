@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
+import { Play, Loader } from "lucide-react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import Link from "next/link";
@@ -23,14 +23,15 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
   const [data, setData] = useState(fallbackData || null);
   const [loading, setLoading] = useState(!fallbackData);
   const [error, setError] = useState("");
+  const [imageLoading, setImageLoading] = useState(true);
 
   useEffect(() => {
     if (!fallbackData) {
-      async function fetchLatestVisit() {
+      async function fetchRandomVisit() {
         try {
-          const response = await fetch("/api/last_visit");
+          const response = await fetch("/api/random_visit");
           if (!response.ok) {
-            throw new Error("Failed to fetch latest visit data");
+            throw new Error("Failed to fetch random visit data");
           }
           const result = await response.json();
           setData(result);
@@ -42,7 +43,7 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
         }
       }
 
-      fetchLatestVisit();
+      fetchRandomVisit();
     }
   }, [fallbackData]);
 
@@ -66,15 +67,22 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
 
   return (
     <div className="relative aspect-[21/9] w-full overflow-hidden">
+      {imageLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background">
+          <Loader className="animate-spin text-[#A3E7CC]" size={48} />
+        </div>
+      )}
       <Image
         src={getImageUrl(image) || "/placeholder.svg"}
         alt={title}
         fill
-        className="object-cover"
+        className={`object-cover transition-opacity duration-500 ${
+          imageLoading ? "opacity-0" : "opacity-100"
+        }`}
         priority
+        onLoadingComplete={() => setImageLoading(false)}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-[#1E2D2F] via-[#1E2D2F]/50 to-transparent" />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#1E2D2F] via-[#1E2D2F]/50 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-[#1E2D2F] via-[#1E2D2F]/5 to-transparent" />
 
       <div className="absolute inset-0">
         <motion.div
@@ -103,12 +111,12 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
                 </Button>
               </Link>
               {/* <Button
-                size="lg"
-                variant="outline"
-                className="border-[#A3E7CC]/30 bg-[#A3E7CC]/10 text-[#A3E7CC] backdrop-blur-sm hover:bg-[#A3E7CC]/20"
-                >
-                Auf der Karte ansehen
-                </Button> */}
+                    size="lg"
+                    variant="outline"
+                    className="border-[#A3E7CC]/30 bg-[#A3E7CC]/10 text-[#A3E7CC] backdrop-blur-sm hover:bg-[#A3E7CC]/20"
+                    >
+                    Auf der Karte ansehen
+                    </Button> */}
             </div>
           </div>
         </motion.div>
