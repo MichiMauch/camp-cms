@@ -102,13 +102,13 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
                   Details
                 </Button>
               </Link>
-              <Button
+              {/* <Button
                 size="lg"
                 variant="outline"
                 className="border-[#A3E7CC]/30 bg-[#A3E7CC]/10 text-[#A3E7CC] backdrop-blur-sm hover:bg-[#A3E7CC]/20"
-              >
+                >
                 Auf der Karte ansehen
-              </Button>
+                </Button> */}
             </div>
           </div>
         </motion.div>
