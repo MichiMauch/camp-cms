@@ -1,0 +1,16 @@
+{
+	"name": "upload-worker",
+	"main": "src/index.ts",
+	"compatibility_date": "2025-04-13",
+	"r2_buckets": [
+	  {
+		"binding": "R2_BUCKET",
+		"bucket_name": "womolog",
+		"preview_bucket_name": "womolog"
+	  }
+	],
+	"vars": {
+	  "BASE_URL": "https://womolog.r2.dev"
+	}
+  }
+  

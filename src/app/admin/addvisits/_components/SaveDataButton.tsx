@@ -56,31 +56,43 @@ export default function SaveDataButton({
     formData.append("file", file);
     formData.append("filename", filename);
 
-    const uploadResponse = await fetch("/api/upload", {
-      method: "POST",
-      body: formData,
-    });
+    const uploadResponse = await fetch(
+      "https://upload-worker.michi-mauch.workers.dev",
+      {
+        method: "POST",
+        body: formData,
+      }
+    );
 
     if (!uploadResponse.ok) {
-      const errorData = await uploadResponse.json();
-      throw new Error(errorData.error || "Upload failed");
+      const errorText = await uploadResponse.text();
+      throw new Error(errorText || "Upload failed");
     }
 
     return filename;
   };
 
   const formatDate = (dateString: string) => {
-    // Überprüfe, ob das Datum bereits im Format DD.MM.YYYY ist
     if (/^\d{2}\.\d{2}\.\d{4}$/.test(dateString)) {
       return dateString;
     }
 
-    // Wenn es ein ISO-String ist, konvertiere ihn
     const date = new Date(dateString);
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
     return `${day}.${month}.${year}`;
+  };
+
+  const toAlpha3 = (code2: string): string => {
+    const map: Record<string, string> = {
+      ch: "CHE",
+      de: "DEU",
+      at: "AUT",
+      fr: "FRA",
+      it: "ITA",
+    };
+    return map[code2.toLowerCase()] || code2.toUpperCase();
   };
 
   const saveData = async () => {
@@ -115,11 +127,13 @@ export default function SaveDataButton({
         }
       }
 
-      // Format dates
       const formattedModifyDate = formatDate(exifData.modifyDate);
       const formattedEndDate = formatDate(endDate);
 
-      // Prepare the data based on placeType
+      const isoAlpha3 = exifData.address?.country_code
+        ? toAlpha3(exifData.address.country_code)
+        : null;
+
       const visitData = {
         exifData: {
           ...exifData,
@@ -139,11 +153,11 @@ export default function SaveDataButton({
         fileName: savedFileName,
         placeType,
         campsiteId: selectedPlace?.id,
+        iso_alpha3: isoAlpha3,
       };
 
       console.log("Sending data to API:", JSON.stringify(visitData, null, 2));
 
-      // Send the data to the API
       const response = await fetch("/api/visits", {
         method: "POST",
         headers: {
@@ -154,7 +168,13 @@ export default function SaveDataButton({
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || "Failed to save data");
+        throw new Error(
+          typeof errorData === "object" &&
+          errorData !== null &&
+          "error" in errorData
+            ? (errorData as { error: string }).error
+            : "Failed to save data"
+        );
       }
 
       setError("");

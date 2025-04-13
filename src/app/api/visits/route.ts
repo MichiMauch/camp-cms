@@ -6,7 +6,7 @@ function formatDateForDB(dateStr: string) {
   try {
     const [day, month, year] = dateStr.split(".")
     if (!day || !month || !year) throw new Error("Ungültiges Datumsformat")
-    return `${year}-${month.padStart(2, "0")}-${day.padStart(2, "0")}`
+    return `${year}-${month.padStart(2, "0")}-${day}`
   } catch (error) {
     console.error("Date formatting error:", error, "for date:", dateStr)
     throw new Error(`Ungültiges Datumsformat: ${dateStr}`)
@@ -50,7 +50,7 @@ export async function POST(request: Request) {
     const data = await request.json()
     console.log("Received data:", JSON.stringify(data, null, 2))
 
-    const { exifData, endDate, fileName, placeType, campsiteId } = data
+    const { exifData, endDate, fileName, placeType, campsiteId, iso_alpha3 } = data
 
     if (!exifData || !exifData.address) {
       console.error("Missing exifData or address")
@@ -62,7 +62,6 @@ export async function POST(request: Request) {
       endDate: endDate,
     })
 
-    // Formatiere die Daten
     const formattedStartDate = formatDateForDB(exifData.modifyDate)
     const formattedEndDate = formatDateForDB(endDate)
 
@@ -86,7 +85,6 @@ export async function POST(request: Request) {
         location: exifData.address.village,
       })
 
-      // Überprüfe, ob der Platz bereits existiert
       const existingCampsite = await db.execute({
         sql: "SELECT id FROM campsites WHERE name = ? AND location = ?",
         args: [exifData.address.tourism, exifData.address.village],
@@ -99,10 +97,11 @@ export async function POST(request: Request) {
         console.log("Creating new campsite with data:", {
           name: exifData.address.tourism,
           location: exifData.address.village,
-          // ... other fields
+          country: exifData.address.country,
+          country_code: exifData.address.country_code,
+          iso_alpha3,
         })
 
-        // Füge einen neuen Eintrag in die Tabelle `campsites` ein
         const newCampsite = await db.execute({
           sql: `
             INSERT INTO campsites (
@@ -114,9 +113,10 @@ export async function POST(request: Request) {
               country, 
               state, 
               country_code, 
-              altitude
+              altitude,
+              iso_alpha3
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             RETURNING id
           `,
           args: [
@@ -129,8 +129,10 @@ export async function POST(request: Request) {
             exifData.address.state,
             exifData.address.country_code,
             exifData.gpsAltitude,
+            iso_alpha3,
           ],
         })
+
         finalCampsiteId = newCampsite.rows[0].id as string
         console.log("Created new campsite:", finalCampsiteId)
       }
@@ -143,7 +145,6 @@ export async function POST(request: Request) {
       fileName,
     })
 
-    // Füge einen neuen Eintrag in die Tabelle `visits` ein
     await db.execute({
       sql: `
         INSERT INTO visits (
@@ -195,4 +196,3 @@ export async function DELETE(request: Request) {
     return NextResponse.json({ error: "Fehler beim Löschen des Besuchs" }, { status: 500 })
   }
 }
-
