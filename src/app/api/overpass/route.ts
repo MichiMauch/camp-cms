@@ -21,7 +21,7 @@ export async function GET(request: Request) {
       way["tourism"="attraction"](around:${radius},${latitude},${longitude});
       relation["tourism"="attraction"](around:${radius},${latitude},${longitude});
 
-      node["tourism"="caravan_site"](around:${radius},${latitude},${longitude});
+      node["tourism"="caravan_site"](around:${radius},${longitude},${latitude});
       way["tourism"="caravan_site"](around:${radius},${latitude},${longitude});
       relation["tourism"="caravan_site"](around:${radius},${latitude},${longitude});
 
@@ -39,13 +39,16 @@ export async function GET(request: Request) {
       throw new Error("Fehler bei der Overpass-API-Anfrage.");
     }
 
-    const data = await response.json();
+    const data: {
+      elements: Array<{
+        tags?: { name?: string };
+      }>;
+    } = await response.json();
 
     // Filtern: Nur Elemente mit `tags` und `tags.name` anzeigen
     const filteredData = {
-      ...data,
       elements: data.elements.filter(
-        (element: { tags?: { name?: string } }) => element.tags && element.tags.name
+        (element) => element.tags && element.tags.name
       ),
     };
 

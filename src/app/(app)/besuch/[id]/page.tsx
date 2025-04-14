@@ -42,7 +42,7 @@ export default function CampingDetail({ params }: { params: { id: string } }) {
         if (!response.ok) {
           throw new Error("Fehler beim Abrufen der Campingplatzdetails.");
         }
-        const data = await response.json();
+        const data: typeof lastVisit = await response.json();
         setLastVisit(data);
       } catch (err) {
         setError("Fehler beim Abrufen der Campingplatzdetails.");

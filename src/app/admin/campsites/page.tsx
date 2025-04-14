@@ -40,7 +40,7 @@ export default function CampsitesAdminPage() {
         if (!response.ok) {
           throw new Error("Failed to fetch campsites");
         }
-        const data = await response.json();
+        const data: Campsite[] = await response.json();
         setCampsites(data);
       } catch (err) {
         setError("Fehler beim Abrufen der Campingplätze.");

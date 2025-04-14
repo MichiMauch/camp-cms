@@ -29,7 +29,12 @@ export default function MigrationPage() {
 
     try {
       const response = await fetch("/api/migrate");
-      const data = await response.json();
+      const data = (await response.json()) as {
+        message?: string;
+        error?: string;
+        processed?: number;
+        total?: number;
+      }; // Typ-Cast hinzugefügt
 
       if (!response.ok) {
         throw new Error(data.error || "Migration failed");

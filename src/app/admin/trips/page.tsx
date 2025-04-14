@@ -59,7 +59,7 @@ export default function TripsPage() {
     try {
       const response = await fetch("/api/trips");
       if (!response.ok) throw new Error("Fehler beim Laden der Trips");
-      const data = await response.json();
+      const data = (await response.json()) as { trips: Trip[] };
       setTrips(data.trips);
     } catch (err) {
       setError(

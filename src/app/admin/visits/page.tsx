@@ -64,7 +64,7 @@ export default function VisitsAdminPage() {
         if (!response.ok) {
           throw new Error("Failed to fetch visits");
         }
-        const data = await response.json();
+        const data = (await response.json()) as Visit[]; // Typ-Cast hinzugefügt
         console.log(
           "Received date format example:",
           data[0]?.dateFrom,

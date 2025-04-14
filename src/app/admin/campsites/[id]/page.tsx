@@ -49,7 +49,7 @@ export default function CampsiteDetailPage({
         if (!response.ok) {
           throw new Error("Failed to fetch campsite details");
         }
-        const data = await response.json();
+        const data: Campsite = await response.json();
         setCampsite(data);
         setEditedCampsite(data);
       } catch {

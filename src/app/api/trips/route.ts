@@ -62,7 +62,7 @@ export async function GET(request: Request) {
 
 export async function PUT(request: Request) {
   try {
-    const body = await request.json()
+    const body: { id: string; name: string } = await request.json() // Typdefinition hinzugefügt
     const { id, name } = body
 
     if (!id || typeof name !== "string") {

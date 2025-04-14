@@ -7,8 +7,22 @@ interface PageProps {
 const BASE_IMAGE_URL = "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/";
 const DEFAULT_IMAGE_EXTENSION = ".webp";
 
+// Typ für die Trip-Daten
+interface Trip {
+  name: string;
+  start_date: string;
+  end_date: string;
+  total_distance: number;
+  campsites: { teaser_image: string }[];
+}
+
+// Typ für die API-Antwort
+interface TripResponse {
+  trip: Trip;
+}
+
 // Funktion zum Abrufen der Trip-Daten mit absoluter URL
-async function getTrip(id: string) {
+async function getTrip(id: string): Promise<Trip | null> {
   try {
     const baseUrl = process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
@@ -25,7 +39,7 @@ async function getTrip(id: string) {
       return null;
     }
 
-    const data = await response.json();
+    const data: TripResponse = await response.json(); // Typisierung der API-Antwort
     console.log("✅ API Response:", JSON.stringify(data, null, 2));
 
     if (!data || !data.trip) {

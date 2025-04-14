@@ -26,7 +26,7 @@ export default function Page() {
   useEffect(() => {
     async function fetchLatestVisit() {
       const response = await fetch("/api/last_visit");
-      const data = await response.json();
+      const data: Entry = await response.json();
       setFeaturedEntry(data);
     }
     fetchLatestVisit();

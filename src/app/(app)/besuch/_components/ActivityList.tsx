@@ -113,9 +113,7 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
       if (!response.ok) {
         throw new Error("Failed to fetch activities");
       }
-      const data = await response.json();
-      console.log("Fetched data from Overpass API:", data);
-
+      const data: { elements: any[] } = await response.json();
       if (!Array.isArray(data.elements)) {
         throw new Error("Unexpected response format");
       }
@@ -193,7 +191,7 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
       if (!response.ok) {
         throw new Error("Failed to fetch location");
       }
-      const data = await response.json();
+      const data: any[] = await response.json();
       console.log("Fetched location data from Nominatim API:", data); // Debug log
       const location =
         data[0]?.address?.city ||

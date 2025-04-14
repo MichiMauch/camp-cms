@@ -62,7 +62,7 @@ export default function TripDetailPage({ params }: { params: { id: string } }) {
               : "Fehler beim Laden des Trips"
           );
         }
-        const data = await response.json();
+        const data: { trip: Trip } = await response.json();
         setTrip(data.trip);
       } catch (error) {
         setError(

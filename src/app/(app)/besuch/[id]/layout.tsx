@@ -7,8 +7,16 @@ interface PageProps {
   params: { id: string };
 }
 
+// Typ für die Rückgabewerte von getLastVisit
+interface VisitDetail {
+  image: string;
+  title: string;
+  location: string;
+  date: string;
+}
+
 // API-Daten abrufen
-async function getLastVisit(id: string) {
+async function getLastVisit(id: string): Promise<VisitDetail | null> {
   try {
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
     const requestUrl = new URL(`/api/visit_detail/${id}`, baseUrl).toString();
@@ -24,7 +32,7 @@ async function getLastVisit(id: string) {
         `Fehler beim Abrufen der Campingplatzdetails: ${response.status}`
       );
 
-    const data = await response.json();
+    const data: VisitDetail = await response.json(); // Typisierung der API-Antwort
     console.log("✅ API Response:", data); // Debugging-Log
 
     return data;

@@ -44,7 +44,7 @@ function VisitedPlacesMap() {
         if (!response.ok) {
           throw new Error("Failed to fetch campsites");
         }
-        const data = await response.json();
+        const data = (await response.json()) as Campsite[];
         setCampsites(data);
       } catch (error) {
         console.error("Failed to fetch campsites:", error);

@@ -44,7 +44,7 @@ export function TotalVisitedPlaces() {
         if (!response.ok) {
           throw new Error("Failed to fetch total visited places");
         }
-        const data = await response.json();
+        const data: { totalCampsites: number } = await response.json(); // Typ hinzugefügt
         setTotalVisitedPlaces(data.totalCampsites);
       } catch (error) {
         console.error("Failed to fetch total visited places:", error);
@@ -74,7 +74,7 @@ export function TotalVisits() {
         if (!response.ok) {
           throw new Error("Failed to fetch total visits");
         }
-        const data = await response.json();
+        const data: { totalVisits: number } = await response.json(); // Typ hinzugefügt
         setTotalVisits(data.totalVisits);
       } catch (error) {
         console.error("Failed to fetch total visits:", error);
@@ -107,7 +107,11 @@ export function CampsitesByCountry() {
         if (!response.ok) {
           throw new Error("Failed to fetch campsites by country");
         }
-        const data = await response.json();
+        const data: {
+          country_code: string;
+          country: string;
+          totalCampsites: number;
+        }[] = await response.json(); // Typ hinzugefügt
         setCampsitesByCountry(data);
       } catch (error) {
         console.error("Failed to fetch campsites by country:", error);

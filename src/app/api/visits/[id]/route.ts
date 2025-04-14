@@ -59,7 +59,7 @@ export async function PUT(
 ) {
   try {
     const id = params.id;
-    const body = await request.json();
+    const body: { dateFrom: string; dateTo: string; visitImage?: string } = await request.json();
     const { dateFrom, dateTo, visitImage } = body;
 
     if (!dateFrom || !dateTo) {

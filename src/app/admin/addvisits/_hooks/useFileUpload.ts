@@ -41,7 +41,16 @@ export const useFileUpload = () => {
         const gpsAltitude =
           exif?.GPSAltitude !== undefined ? exif.GPSAltitude : 0;
 
-        const address = await fetchAddress(latitude, longitude);
+        const address = (await fetchAddress(latitude, longitude)) as {
+          display_name: string;
+          address: {
+            tourism?: string;
+            village?: string;
+            country?: string;
+            country_code?: string;
+            state?: string;
+          };
+        };
 
         const newFileName = generateFileName(
           address.address?.tourism || "unknown",
@@ -59,7 +68,7 @@ export const useFileUpload = () => {
             village: address.address?.village,
             country: address.address?.country,
             country_code: address.address?.country_code,
-            state: address.address?.state,  // Add this line
+            state: address.address?.state,
           },
         });
         setFileName(newFileName);

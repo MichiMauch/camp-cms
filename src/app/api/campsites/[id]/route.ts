@@ -43,8 +43,20 @@ export async function PUT(request: Request, { params }: { params: { id: string }
     const id = params.id;
 
     // Daten aus der Anfrage lesen
-    const body = await request.json();
+    const body: {
+      name: string;
+      location: string;
+      teaserImage?: string;
+      latitude: number;
+      longitude: number;
+      country: string;
+      country_code: string;
+    } = await request.json();
+
     const { name, location, teaserImage, latitude, longitude, country, country_code } = body;
+
+    // Standardwert für teaserImage setzen, falls undefined
+    const teaserImageValue = teaserImage ?? null;
 
     // Validierung der Eingabedaten (optional)
     if (!name || !location || latitude === undefined || longitude === undefined || !country || !country_code) {
@@ -61,7 +73,7 @@ export async function PUT(request: Request, { params }: { params: { id: string }
         SET name = ?, location = ?, teaser_image = ?, latitude = ?, longitude = ?, country = ?, country_code = ?
         WHERE id = ?
       `,
-      args: [name, location, teaserImage, latitude, longitude, country, country_code, id],
+      args: [name, location, teaserImageValue, latitude, longitude, country, country_code, id],
     });
 
     return NextResponse.json({ success: true });

@@ -106,7 +106,24 @@ export default function CampingStatistics() {
   useEffect(() => {
     async function fetchData() {
       const response = await fetch("/api/stats");
-      const data = await response.json();
+      const data = (await response.json()) as {
+        totalVisits: number;
+        totalCampsites: number;
+        currentYearVisits: number;
+        totalNights: number;
+        currentYearNights: number;
+        currentYearCampsites: number;
+        multiVisitTrips: number;
+        yearlyDistances: Array<{ year: string; kilometers: number }>;
+        distance: {
+          total: number;
+          averagePerTrip: number;
+          currentYear: {
+            total: number;
+            averagePerTrip: number;
+          };
+        };
+      };
       setStats(data);
     }
     fetchData();

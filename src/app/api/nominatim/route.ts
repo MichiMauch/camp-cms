@@ -1,5 +1,22 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+// Typdefinition für die Nominatim-API-Antwort
+interface NominatimResponse {
+  display_name: string;
+  address: {
+    tourism?: string;
+    amenity?: string;
+    leisure?: string;
+    village?: string;
+    town?: string;
+    city?: string;
+    state?: string;
+    county?: string;
+    country?: string;
+    country_code?: string;
+  };
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url)
   const latitude = searchParams.get("latitude")
@@ -26,7 +43,7 @@ export async function GET(req: NextRequest) {
       throw new Error(`Nominatim API Fehler: ${response.status}`)
     }
 
-    const data = await response.json()
+    const data: NominatimResponse = await response.json()
     console.log("Nominatim API response:", data)
 
     if (!data || !data.address) {

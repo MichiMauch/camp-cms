@@ -38,7 +38,7 @@ export default function TripsPage() {
     async function fetchTrips() {
       try {
         const response = await fetch("/api/trips");
-        const data = await response.json();
+        const data: { trips: Trip[] } = await response.json();
         console.log("Fetched Trips:", data.trips); // Debug-Ausgabe
         setTrips(data.trips || []);
       } catch (error) {

@@ -93,7 +93,7 @@ export default function VisitDetailPage({
         if (!response.ok) {
           throw new Error("Failed to fetch visit details");
         }
-        const data = await response.json();
+        const data: Visit = await response.json(); // Typ explizit angeben
         console.log("Visit data received:", data); // Debug log
         setVisit(data);
         setEditedVisit(data);

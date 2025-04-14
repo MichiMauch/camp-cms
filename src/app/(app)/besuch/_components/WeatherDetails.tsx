@@ -55,7 +55,17 @@ const WeatherDetails: React.FC<WeatherDetailsProps> = ({
         if (!response.ok) {
           throw new Error("Failed to fetch weather data");
         }
-        const data = await response.json();
+        const data: {
+          main: {
+            temp: number;
+            feels_like: number;
+            humidity: number;
+            grnd_level: number;
+          };
+          wind: { speed: number };
+          sys: { sunrise: number; sunset: number };
+          weather: { icon: string; description: string }[];
+        } = await response.json();
         setTemperature(parseFloat(data.main.temp.toFixed(1)));
         setFeelsLike(parseFloat(data.main.feels_like.toFixed(1)));
         setWindSpeed(data.wind.speed);

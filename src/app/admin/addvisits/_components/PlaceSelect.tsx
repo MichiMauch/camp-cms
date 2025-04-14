@@ -50,7 +50,7 @@ export function PlaceSelect({
       try {
         const response = await fetch("/api/campsites");
         if (!response.ok) throw new Error("Failed to fetch campsites");
-        const data = await response.json();
+        const data = (await response.json()) as Campsite[]; // Typ-Cast hinzugefügt
         setPlaces(data);
       } catch (error) {
         console.error("Error fetching campsites:", error);

@@ -27,6 +27,13 @@ const HOME_COORDINATES = {
 const BASE_IMAGE_URL = "https://pub-7b46ce1a4c0f4ff6ad2ed74d56e2128a.r2.dev/";
 const DEFAULT_IMAGE_EXTENSION = ".webp";
 
+// Typ für die Mapbox Directions API-Antwort
+interface MapboxDirectionsResponse {
+  routes: {
+    geometry: GeoJSON.LineString; // Präzisiere den Typ als GeoJSON.LineString
+  }[];
+}
+
 export default function TripMap({ campsites }: MapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
@@ -70,7 +77,11 @@ export default function TripMap({ campsites }: MapProps) {
           const start = coordinates[i].join(",");
           const end = coordinates[i + 1].join(",");
           const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${start};${end}?geometries=geojson&access_token=${process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN}`;
-          requests.push(fetch(url).then((res) => res.json()));
+          requests.push(
+            fetch(url).then(
+              (res) => res.json() as Promise<MapboxDirectionsResponse>
+            )
+          ); // Typisiere die Antwort explizit
         }
 
         // Hole alle Routen
@@ -79,13 +90,14 @@ export default function TripMap({ campsites }: MapProps) {
         // Zeichne jede Route
         responses.forEach((data, index) => {
           if (data.routes?.[0]?.geometry) {
+            const geometry = data.routes[0].geometry; // Typ ist jetzt GeoJSON.LineString
             if (map.getSource(`route-${index}`)) {
               (
                 map.getSource(`route-${index}`) as mapboxgl.GeoJSONSource
               ).setData({
                 type: "Feature",
                 properties: {},
-                geometry: data.routes[0].geometry,
+                geometry,
               });
             } else {
               map.addSource(`route-${index}`, {
@@ -93,7 +105,7 @@ export default function TripMap({ campsites }: MapProps) {
                 data: {
                   type: "Feature",
                   properties: {},
-                  geometry: data.routes[0].geometry,
+                  geometry,
                 },
               });
 

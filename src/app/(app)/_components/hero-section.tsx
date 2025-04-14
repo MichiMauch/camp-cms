@@ -33,7 +33,14 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
           if (!response.ok) {
             throw new Error("Failed to fetch random visit data");
           }
-          const result = await response.json();
+          const result: {
+            title: string;
+            date: string;
+            location: string;
+            description: string;
+            image: string;
+            id: string;
+          } = await response.json();
           setData(result);
         } catch (err) {
           setError("Fehler beim Abrufen der Daten.");
