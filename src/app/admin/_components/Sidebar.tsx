@@ -79,6 +79,12 @@ const navigation: NavigationSection[] = [
         icon: Tent,
         current: false,
       },
+      {
+        name: "Bilder konvertieren",
+        href: "/admin/convert",
+        icon: Tent,
+        current: false,
+      },
     ],
   },
 ];

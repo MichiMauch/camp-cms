@@ -47,7 +47,27 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json()
+    const data = await request.json() as {
+      exifData: {
+        address: {
+          tourism: string;
+          village: string;
+          country: string;
+          country_code: string;
+          state?: string; // Optional state property added
+        };
+        modifyDate: string;
+        latitude: number;
+        longitude: number;
+        gpsAltitude: number;
+        state: string;
+      };
+      endDate: string;
+      fileName: string;
+      placeType: string;
+      campsiteId?: string;
+      iso_alpha3: string;
+    };
     console.log("Received data:", JSON.stringify(data, null, 2))
 
     const { exifData, endDate, fileName, placeType, campsiteId, iso_alpha3 } = data
@@ -126,7 +146,7 @@ export async function POST(request: Request) {
             exifData.latitude,
             exifData.longitude,
             exifData.address.country,
-            exifData.address.state,
+            exifData.address.state ?? "",
             exifData.address.country_code,
             exifData.gpsAltitude,
             iso_alpha3,
