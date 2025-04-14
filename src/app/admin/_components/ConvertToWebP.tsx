@@ -1,22 +1,125 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import imageCompression from "browser-image-compression";
+import * as exifr from "exifr";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export default function ConvertToWebP() {
+interface ExifData {
+  modifyDate: string;
+  gpsAltitude: number;
+  latitude: number;
+  longitude: number;
+  address?: {
+    display_name: string;
+    tourism?: string;
+    village?: string;
+    state?: string;
+    country?: string;
+    country_code?: string;
+  };
+}
+
+interface ConvertToWebPProps {
+  onExifDataExtracted?: (data: ExifData) => void;
+  onWebpReady?: (file: File) => void;
+}
+
+export default function ConvertToWebP({
+  onExifDataExtracted,
+  onWebpReady,
+}: ConvertToWebPProps) {
   const [originalFile, setOriginalFile] = useState<File | null>(null);
   const [webpFile, setWebpFile] = useState<File | null>(null);
   const [previewURL, setPreviewURL] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setOriginalFile(file);
       setWebpFile(null);
       setPreviewURL(URL.createObjectURL(file));
+
+      try {
+        const exif = await exifr.parse(file, { gps: true });
+        const latitude = exif?.latitude ?? exif?.GPSLatitude;
+        const longitude = exif?.longitude ?? exif?.GPSLongitude;
+        const altitude = exif?.altitude ?? exif?.GPSAltitude ?? 0;
+        const dateRaw = exif?.DateTimeOriginal ?? exif?.ModifyDate;
+
+        const formattedDate = dateRaw
+          ? format(new Date(dateRaw), "dd.MM.yyyy")
+          : format(new Date(), "dd.MM.yyyy");
+
+        let addressInfo: {
+          display_name?: string;
+          address?: {
+            village?: string;
+            state?: string;
+            country?: string;
+            country_code?: string;
+          };
+        } = {};
+
+        if (latitude && longitude) {
+          try {
+            const response = await fetch(
+              `/api/nominatim?latitude=${latitude}&longitude=${longitude}`
+            );
+            addressInfo = await response.json();
+          } catch (apiError) {
+            console.warn("Nominatim-API Fehler:", apiError);
+          }
+        }
+
+        const exifData: ExifData = {
+          modifyDate: formattedDate,
+          gpsAltitude: altitude,
+          latitude,
+          longitude,
+          address: {
+            display_name: addressInfo.display_name ?? "",
+            tourism: "",
+            village: addressInfo.address?.village ?? "",
+            state: addressInfo.address?.state ?? "",
+            country: addressInfo.address?.country ?? "",
+            country_code: addressInfo.address?.country_code ?? "",
+          },
+        };
+
+        onExifDataExtracted?.(exifData);
+      } catch (err) {
+        console.error("EXIF oder Nominatim-Fehler:", err);
+      }
+    }
+  };
+
+  const uploadToCloudflare = async (file: File) => {
+    try {
+      const response = await fetch(
+        "https://upload-worker.michi-mauch.workers.dev",
+        {
+          method: "POST",
+          body: file,
+          headers: {
+            "Content-Type": file.type,
+            "X-Filename": file.name,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Upload fehlgeschlagen: ${errorText}`);
+      }
+
+      const result = await response.json();
+      console.log("Upload erfolgreich:", result);
+    } catch (error) {
+      console.error("Upload-Fehler:", error);
     }
   };
 
@@ -54,6 +157,8 @@ export default function ConvertToWebP() {
 
       setWebpFile(webpFileFinal);
       setPreviewURL(URL.createObjectURL(webpFileFinal));
+      onWebpReady?.(webpFileFinal);
+      await uploadToCloudflare(webpFileFinal);
     } catch (err) {
       console.error("WebP-Konvertierung fehlgeschlagen:", err);
     } finally {

@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useFileUpload } from "./_hooks/useFileUpload";
 import { VisitForm } from "./_components/VisitForm";
 import { parse } from "date-fns";
-import { FileUpload } from "./_components/FileUpload";
+import ConvertToWebP from "../_components/ConvertToWebP";
 import { Loader2 } from "lucide-react";
 
 export default function UploadVisitPage() {
@@ -15,9 +15,9 @@ export default function UploadVisitPage() {
     fileName,
     setFileName,
     imageUrl,
-    imageFile, // Add this line
-    handleFileChange,
-    isLoading, // Add this line
+    imageFile,
+    setImageFile, // Sicherstellen, dass setImageFile hier verfügbar ist
+    isLoading,
   } = useFileUpload();
 
   const [startDate, setStartDate] = useState<Date>(() => new Date());
@@ -44,10 +44,15 @@ export default function UploadVisitPage() {
     }
   };
 
-  // Update start date when exif data changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (exifData?.modifyDate) {
-      const parsedDate = parse(exifData.modifyDate, "dd.MM.yyyy", new Date());
+      const value = exifData.modifyDate;
+      const isString = typeof value === "string";
+
+      const parsedDate = isString
+        ? parse(value, "dd.MM.yyyy", new Date())
+        : new Date(value);
+
       setStartDate(parsedDate);
     }
   }, [exifData?.modifyDate]);
@@ -57,13 +62,20 @@ export default function UploadVisitPage() {
       <h1 className="text-2xl font-bold mb-4">Besuch erfassen</h1>
 
       <div className="mb-6">
-        <FileUpload onFileSelect={handleFileChange} />
+        <ConvertToWebP
+          onExifDataExtracted={(data) => {
+            setExifData(data);
+          }}
+          onWebpReady={(file) => {
+            setImageFile(file);
+          }}
+        />
       </div>
 
       {isLoading && (
         <div className="flex justify-center items-center">
           <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-          <span>Bild wird hochgeladen...</span>
+          <span>Bild wird verarbeitet...</span>
         </div>
       )}
 
@@ -76,7 +88,7 @@ export default function UploadVisitPage() {
           endDate={endDate}
           fileName={fileName}
           imageUrl={imageUrl}
-          imageFile={imageFile} // Add this line
+          imageFile={imageFile}
           onInputChange={handleInputChange}
           onAddressInputChange={handleAddressInputChange}
           onFileNameChange={(e) => setFileName(e.target.value)}

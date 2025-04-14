@@ -90,8 +90,10 @@ export const useFileUpload = () => {
     setFileName,
     imageUrl,
     imageFile,
+    setImageFile, // ✅ Hier hinzufügen!
     handleFileChange,
-    isLoading, // Add this line
+    isLoading,
   };
+  
 };
 

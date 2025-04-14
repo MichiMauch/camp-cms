@@ -31,7 +31,7 @@ export function DatePicker({ date, onSelect }: DatePickerProps) {
           )}
         >
           <CalendarIcon className="mr-2 h-4 w-4" />
-          {date ? (
+          {date instanceof Date && !isNaN(date.getTime()) ? (
             format(date, "dd.MM.yyyy", { locale: de })
           ) : (
             <span>Datum wählen</span>

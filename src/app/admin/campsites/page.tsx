@@ -36,7 +36,7 @@ export default function CampsitesAdminPage() {
   useEffect(() => {
     async function fetchCampsites() {
       try {
-        const response = await fetch("/api/campsites");
+        const response = await fetch("/api/campsites", { cache: "no-store" });
         if (!response.ok) {
           throw new Error("Failed to fetch campsites");
         }
