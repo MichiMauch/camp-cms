@@ -24,57 +24,59 @@ import {
   ChartTooltip,
   ChartTooltipContent,
 } from "@/components/ui/chart";
-import { Tent, Bed, Bus, Route } from "lucide-react";
+import { Compass, Tent, Bed, Bus, Route } from "lucide-react";
 
-// Beispieldaten
-const monthlyData = [
-  { month: "Jan", visits: 2 },
-  { month: "Feb", visits: 1 },
-  { month: "Mar", visits: 0 },
-  { month: "Apr", visits: 3 },
-  { month: "Mai", visits: 4 },
-  { month: "Jun", visits: 6 },
-  { month: "Jul", visits: 8 },
-  { month: "Aug", visits: 7 },
-  { month: "Sep", visits: 5 },
-  { month: "Okt", visits: 2 },
-  { month: "Nov", visits: 1 },
-  { month: "Dez", visits: 2 },
-];
-
-const countryData = [
-  { country: "Deutschland", visits: 25 },
-  { country: "Frankreich", visits: 12 },
-  { country: "Italien", visits: 8 },
-  { country: "Österreich", visits: 6 },
-  { country: "Niederlande", visits: 4 },
-];
-
-const recentCampsites = [
-  { name: "Camping am See", location: "Bayern", date: "15.10.2023" },
-  { name: "Waldcamping Müller", location: "Hessen", date: "28.09.2023" },
-  {
-    name: "Strandcamping Nord",
-    location: "Schleswig-Holstein",
-    date: "15.09.2023",
-  },
-  { name: "Bergblick Camping", location: "Tirol, AT", date: "22.08.2023" },
-  {
-    name: "Seecamping Blau",
-    location: "Baden-Württemberg",
-    date: "05.08.2023",
-  },
-];
+type Campsite = {
+  name: string;
+  location: string;
+  country: string;
+  latitude: number;
+  longitude: number;
+};
 
 export default function CampingStatistics() {
   const [stats, setStats] = useState<{
     totalVisits: number;
+    extremeCampsites: {
+      north: Campsite;
+      south: Campsite;
+      east: Campsite;
+      west: Campsite;
+    };
     totalCampsites: number;
     currentYearVisits: number;
     totalNights: number;
     currentYearNights: number;
     currentYearCampsites: number;
     multiVisitTrips: number;
+    multiVisitTripsCurrentYear: number;
+    longestTripBreak: number;
+
+    longestStay: {
+      name: string;
+      location: string;
+      country: string;
+      duration: number;
+    };
+    visitsPerMonth: Array<{
+      month: string;
+      count: number;
+    }>;
+    mostVisitedCampsites: Array<{
+      name: string;
+      location: string;
+      country: string;
+      visit_count: number;
+    }>;
+    visitsPerCountry: Array<{
+      country: string;
+      visit_count: number;
+      country_code: string;
+    }>;
+    longestTrip: {
+      distance: number;
+      visitCount: number;
+    };
     yearlyDistances: Array<{ year: string; kilometers: number }>;
     distance: {
       total: number;
@@ -86,13 +88,26 @@ export default function CampingStatistics() {
     };
   }>({
     totalVisits: 0,
+    extremeCampsites: {
+      north: { name: "", location: "", country: "", latitude: 0, longitude: 0 },
+      south: { name: "", location: "", country: "", latitude: 0, longitude: 0 },
+      east: { name: "", location: "", country: "", latitude: 0, longitude: 0 },
+      west: { name: "", location: "", country: "", latitude: 0, longitude: 0 },
+    },
+    longestTripBreak: 0,
     totalCampsites: 0,
     currentYearVisits: 0,
     totalNights: 0,
     currentYearNights: 0,
     currentYearCampsites: 0,
     multiVisitTrips: 0,
+    multiVisitTripsCurrentYear: 0,
+    visitsPerMonth: [],
+    longestStay: { name: "", location: "", country: "", duration: 0 },
+    mostVisitedCampsites: [],
     yearlyDistances: [],
+    visitsPerCountry: [],
+    longestTrip: { distance: 0, visitCount: 0 },
     distance: {
       total: 0,
       averagePerTrip: 0,
@@ -105,15 +120,75 @@ export default function CampingStatistics() {
 
   useEffect(() => {
     async function fetchData() {
-      const response = await fetch("/api/stats");
+      const response = await fetch("/api/stats", {
+        cache: "no-store",
+      });
       const data = (await response.json()) as {
         totalVisits: number;
+        longestTripBreak: number;
         totalCampsites: number;
         currentYearVisits: number;
         totalNights: number;
         currentYearNights: number;
         currentYearCampsites: number;
         multiVisitTrips: number;
+        multiVisitTripsCurrentYear: number;
+        longestStay: {
+          name: string;
+          location: string;
+          country: string;
+          duration: number;
+        };
+        visitsPerMonth: Array<{
+          month: string;
+          count: number;
+        }>;
+        mostVisitedCampsites: Array<{
+          name: string;
+          location: string;
+          country: string;
+          visit_count: number;
+        }>;
+        visitsPerCountry: Array<{
+          country: string;
+          visit_count: number;
+          country_code: string;
+        }>;
+        longestTrip: {
+          distance: number;
+          visitCount: number;
+        };
+        extremeCampsites: {
+          north: {
+            name: string;
+            location: string;
+            country: string;
+            latitude: number;
+            longitude: number;
+          };
+          south: {
+            name: string;
+            location: string;
+            country: string;
+            latitude: number;
+            longitude: number;
+          };
+          east: {
+            name: string;
+            location: string;
+            country: string;
+            latitude: number;
+            longitude: number;
+          };
+          west: {
+            name: string;
+            location: string;
+            country: string;
+            latitude: number;
+            longitude: number;
+          };
+        };
+
         yearlyDistances: Array<{ year: string; kilometers: number }>;
         distance: {
           total: number;
@@ -162,7 +237,7 @@ export default function CampingStatistics() {
             <CardContent>
               <div className="text-2xl font-bold">{stats.totalCampsites}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.currentYearCampsites} dieses Jahr
+                {stats.currentYearVisits} dieses Jahr
               </p>
             </CardContent>
           </Card>
@@ -216,8 +291,57 @@ export default function CampingStatistics() {
             <CardContent>
               <div className="text-2xl font-bold">{stats.multiVisitTrips}</div>
               <p className="text-xs text-muted-foreground">
-                {stats.currentYearVisits} dieses Jahr
+                {stats.multiVisitTripsCurrentYear} dieses Jahr
                 <br />
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Längster Trip
+              </CardTitle>
+              <Route className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.longestTrip.distance.toLocaleString("de-DE")} Kilometer
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {stats.longestTrip.visitCount} besuchte Orte
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Längster Aufenthalt
+              </CardTitle>
+              <Tent className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.longestStay.duration} Nächte
+              </div>
+              <p className="text-xs text-muted-foreground">
+                auf {stats.longestStay.name} ({stats.longestStay.location},{" "}
+                {stats.longestStay.country})
+              </p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">
+                Längste Pause
+              </CardTitle>
+              <Route className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">
+                {stats.longestTripBreak} Tage
+              </div>
+              <p className="text-xs text-muted-foreground">
+                ohne Wohnmobil-Reise
               </p>
             </CardContent>
           </Card>
@@ -230,7 +354,7 @@ export default function CampingStatistics() {
               <CardTitle>Kilometer pro Jahr</CardTitle>
               <CardDescription>Jährlich zurückgelegte Strecke</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="overflow-hidden">
               <ChartContainer
                 config={{
                   kilometers: {
@@ -238,7 +362,7 @@ export default function CampingStatistics() {
                     color: "hsl(var(--chart-1))",
                   },
                 }}
-                className="h-[200px]"
+                className="w-full h-[200px]"
               >
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={stats.yearlyDistances}>
@@ -260,7 +384,7 @@ export default function CampingStatistics() {
           {/* Interessante Distanz-Vergleiche */}
           <Card>
             <CardHeader>
-              <CardTitle>Interessante Distanz-Vergleiche</CardTitle>
+              <CardTitle>Distanz-Vergleiche</CardTitle>
               <CardDescription>
                 Basierend auf {stats.distance.total.toLocaleString("de-DE")}{" "}
                 gefahrenen Kilometern
@@ -300,149 +424,143 @@ export default function CampingStatistics() {
             </CardContent>
           </Card>
         </div>
-        {/* Übernachtungen */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Übernachtungen</CardTitle>
-            <CardDescription>
-              Gesamtanzahl der Übernachtungen im Wohnmobil
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <span>Gesamt</span>
-                <span className="text-2xl font-bold">
-                  {stats.totalNights} Nächte
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Dieses Jahr</span>
-                <span className="text-xl font-semibold">
-                  {stats.currentYearNights} Nächte
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span>Durchschnitt pro Besuch</span>
-                <span className="text-xl font-semibold">
-                  {stats.totalVisits > 0
-                    ? (stats.totalNights / stats.totalVisits).toFixed(1)
-                    : 0}{" "}
-                  Nächte
-                </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Besuche pro Monat */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Saisonale Verteilung</CardTitle>
-            <CardDescription>
-              Anzahl der Campingbesuche pro Monat
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer
-              config={{
-                visits: { label: "Besuche", color: "hsl(var(--chart-2))" },
-              }}
-              className="h-[300px]"
-            >
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={monthlyData}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="month" />
-                  <YAxis />
-                  <ChartTooltip content={<ChartTooltipContent />} />
-                  <Line
-                    type="monotone"
-                    dataKey="visits"
-                    stroke="var(--color-visits)"
-                    strokeWidth={2}
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
-        {/* Letzte Besuche */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Letzte Besuche</CardTitle>
-            <CardDescription>
-              Die 5 zuletzt besuchten Campingplätze
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              {recentCampsites.map((site, index) => (
-                <div key={index} className="flex justify-between items-center">
-                  <div className="space-y-1">
-                    <p className="font-medium">{site.name}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {site.location}
-                    </p>
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {site.date}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Weitere Statistiken */}
+        {/* 🔽 Statistik: Länder & häufigste Plätze nebeneinander */}
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Top Campingplätze</CardTitle>
-              <CardDescription>Am häufigsten besuchte Plätze</CardDescription>
+              <CardTitle>Besuche nach Land</CardTitle>
+              <CardDescription>Verteilung der Campingbesuche</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Camping Waldwiese</span>
-                  <span className="font-bold">5 Besuche</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Seecamping Blau</span>
-                  <span className="font-bold">4 Besuche</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Bergcamping Höhe</span>
-                  <span className="font-bold">3 Besuche</span>
-                </div>
+              {/* 🔽 Anzeige der Verteilung nach Ländern */}
+              <div className="space-y-2">
+                {stats.visitsPerCountry.map((entry, index) => (
+                  <div key={index} className="flex justify-between">
+                    <span className="flex items-center gap-2">
+                      <span
+                        className={`fi fi-${entry.country_code.toLowerCase()}`}
+                      />
+                      {entry.country}
+                    </span>
+                    <span className="font-bold">{entry.visit_count}</span>
+                  </div>
+                ))}
               </div>
+              {/* 🔼 Ende: Anzeige der Verteilung nach Ländern */}
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle>Aufenthaltsdauer</CardTitle>
-              <CardDescription>Statistiken zur Verweildauer</CardDescription>
+              <CardTitle>Häufigste Besuche</CardTitle>
+              <CardDescription>
+                Anzahl der Besuche auf einem Platz
+              </CardDescription>
             </CardHeader>
+            {/* 🔽 Anzeige der meistbesuchten Campingplätze */}
             <CardContent>
               <div className="space-y-4">
-                <div className="flex justify-between">
-                  <span>Längster Aufenthalt</span>
-                  <span className="font-bold">12 Tage</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Durchschnittlicher Aufenthalt</span>
-                  <span className="font-bold">3.5 Tage</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Kürzester Aufenthalt</span>
-                  <span className="font-bold">1 Tag</span>
-                </div>
+                {stats.mostVisitedCampsites.map((site, index) => (
+                  <div key={index} className="flex justify-between">
+                    <span>
+                      {site.name} ({site.location}, {site.country})
+                    </span>
+                    <span className="font-bold">
+                      {site.visit_count} Besuche
+                    </span>
+                  </div>
+                ))}
               </div>
             </CardContent>
           </Card>
         </div>
+        {/* 🔼 Ende: Statistik-Zeile mit zwei Cards */}
+        <div className="grid gap-6 lg:grid-cols-2">
+          {/* Statistik Säulendiagramm */}
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Besuche pro Monat</CardTitle>
+              <CardDescription>
+                Alle Campingplatz-Aufenthalte über alle Jahre
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  count: {
+                    label: "Anzahl Besuche",
+                    color: "hsl(var(--chart-1))",
+                  },
+                }}
+                className="h-[300px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.visitsPerMonth}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="month" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar
+                      dataKey="count"
+                      fill="var(--color-count)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+          {/* Extrempunkte in einer grossen Card */}
+          <Card className="h-full">
+            <CardHeader>
+              <CardTitle>Extremste Orte</CardTitle>
+              <CardDescription>
+                Nördlichster, südlichster, westlichster und östlichster Platz
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4 md:grid-cols-2 items-stretch">
+                {["north", "south", "east", "west"].map((direction) => {
+                  const campsite =
+                    stats.extremeCampsites[
+                      direction as keyof typeof stats.extremeCampsites
+                    ];
+                  return (
+                    <div
+                      key={direction}
+                      className="rounded-lg border p-4 bg-muted/10 text-muted-foreground h-full"
+                    >
+                      <p className="text-sm text-muted-foreground capitalize">
+                        {direction === "north"
+                          ? "Nördlichster Platz"
+                          : direction === "south"
+                          ? "Südlichster Platz"
+                          : direction === "east"
+                          ? "Östlichster Platz"
+                          : "Westlichster Platz"}
+                      </p>
+                      <p className="text-md font-semibold text-white">
+                        {campsite.name}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {campsite.location}, {campsite.country}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="flex justify-center mt-6">
+                <img
+                  src="/cardinal.svg"
+                  alt="Kompass"
+                  className="w-16 h-16 opacity-80"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Letzte Besuche */}
       </div>
     </>
   );

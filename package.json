@@ -42,6 +42,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
+    "country-flag-icons": "^1.5.18",
     "date-fns": "^3.0.0",
     "dotenv": "^16.4.7",
     "exifr": "^7.1.3",

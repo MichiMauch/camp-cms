@@ -40,7 +40,7 @@ function VisitedPlacesMap() {
   useEffect(() => {
     async function fetchCampsites() {
       try {
-        const response = await fetch("/api/plaetze");
+        const response = await fetch("/api/plaetze", { cache: "no-store" });
         if (!response.ok) {
           throw new Error("Failed to fetch campsites");
         }

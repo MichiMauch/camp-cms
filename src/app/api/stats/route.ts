@@ -162,9 +162,203 @@ export async function GET(request: Request) {
     })
     const multiVisitTrips = Number(multiVisitTripsResult.rows[0].count)
 
+    const multiVisitTripsCurrentYearResult = await db.execute({
+      sql: `
+        SELECT COUNT(*) as count
+        FROM (
+          SELECT trip_id
+          FROM visits
+          WHERE trip_id IS NOT NULL
+            AND (
+              strftime('%Y', date(date_from)) = strftime('%Y', 'now')
+              OR strftime('%Y', date(date_to)) = strftime('%Y', 'now')
+            )
+          GROUP BY trip_id
+          HAVING COUNT(*) > 1
+        ) multi_visit_trips
+      `,
+      args: [],
+    })
+    const multiVisitTripsCurrentYear = Number(multiVisitTripsCurrentYearResult.rows[0].count)
+    
+    /// 🔽 Meistbesuchte 5 Campingplätze
+    const mostVisitedCampsitesResult = await db.execute({
+      sql: `
+        SELECT 
+          c.name, 
+          c.location, 
+          c.country, 
+          COUNT(v.id) as visit_count
+        FROM visits v
+        JOIN campsites c ON v.campsite_id = c.id
+        GROUP BY c.id
+        ORDER BY visit_count DESC
+        LIMIT 6
+      `,
+      args: [],
+    })
+    const mostVisitedCampsites = mostVisitedCampsitesResult.rows
+    // 🔼 Ende: Meistbesuchte 5 Campingplätze
+
+    // 🔽 Anzahl Besuche pro Land (inkl. Ländercode)
+    const visitsPerCountryResult = await db.execute({
+      sql: `
+        SELECT 
+          c.country,
+          c.country_code,
+          COUNT(v.id) as visit_count
+        FROM visits v
+        JOIN campsites c ON v.campsite_id = c.id
+        GROUP BY c.country, c.country_code
+        ORDER BY visit_count DESC
+      `,
+      args: [],
+    })
+
+    const visitsPerCountry = visitsPerCountryResult.rows
+
+
+    // 🟩 Längster Trip: Distanz + Anzahl besuchter Orte
+    const longestTripResult = await db.execute(`
+      SELECT 
+        t.id,
+        t.total_distance,
+        COUNT(v.id) as visit_count
+      FROM trips t
+      JOIN visits v ON v.trip_id = t.id
+      GROUP BY t.id
+      ORDER BY t.total_distance DESC
+      LIMIT 1
+    `)
+
+    const longestTrip = {
+      distance: Number(longestTripResult.rows[0]?.total_distance || 0),
+      visitCount: Number(longestTripResult.rows[0]?.visit_count || 0),
+    }
+    // 🟩 ENDE Längster Trip: Distanz + Anzahl besuchter Orte
+
+    // 🔽 Längster Aufenthalt auf einem Platz
+    const longestStayResult = await db.execute({
+      sql: `
+        SELECT 
+          c.name,
+          c.location,
+          c.country,
+          CAST(julianday(date(v.date_to)) - julianday(date(v.date_from)) AS INTEGER) AS duration
+        FROM visits v
+        JOIN campsites c ON v.campsite_id = c.id
+        ORDER BY duration DESC
+        LIMIT 1
+      `,
+      args: [],
+    })
+
+    const longestStay = {
+      name: longestStayResult.rows[0]?.name || "Unbekannt",
+      location: longestStayResult.rows[0]?.location || "-",
+      country: longestStayResult.rows[0]?.country || "-",
+      duration: Number(longestStayResult.rows[0]?.duration || 0),
+    }
+    // 🔼 Ende: Längster Aufenthalt
+
+
+    // 🔽 Korrigierte längste Pause zwischen zwei aufeinanderfolgenden Trips
+    const longestTripBreakResult = await db.execute({
+      sql: `
+        SELECT MAX(
+          julianday(next_start) - julianday(end_date)
+        ) as max_break
+        FROM (
+          SELECT 
+            end_date,
+            LEAD(start_date) OVER (ORDER BY start_date) as next_start
+          FROM trips
+        ) AS gaps
+        WHERE next_start IS NOT NULL
+      `,
+      args: [],
+    })
+
+    const longestTripBreak = Math.round(
+      Number(longestTripBreakResult.rows[0]?.max_break || 0)
+    )
+    // 🔼 Ende: Längste Pause
+
+    // 🔽 Anzahl Visits pro Monat (über alle Jahre, nach date_from)
+    const visitsPerMonthResult = await db.execute({
+      sql: `
+        SELECT 
+          strftime('%m', date_from) as month,
+          COUNT(*) as count
+        FROM visits
+        GROUP BY month
+        ORDER BY month
+      `,
+      args: [],
+    })
+
+    const visitsPerMonthRaw = visitsPerMonthResult.rows
+
+    const monthNames = [
+      "Jan", "Feb", "Mär", "Apr", "Mai", "Jun",
+      "Jul", "Aug", "Sep", "Okt", "Nov", "Dez"
+    ]
+
+    const visitsPerMonth = monthNames.map((name, index) => {
+      const monthKey = (index + 1).toString().padStart(2, "0")
+      const match = visitsPerMonthRaw.find(row => row.month === monthKey)
+      return {
+        month: name,
+        count: match ? Number(match.count) : 0
+      }
+    })
+
+    // 🔽 Extrempunkte (Nord / Süd / Ost / West)
+    const northResult = await db.execute(`
+      SELECT name, location, country, latitude, longitude
+      FROM campsites
+      ORDER BY latitude DESC
+      LIMIT 1
+    `)
+
+    const southResult = await db.execute(`
+      SELECT name, location, country, latitude, longitude
+      FROM campsites
+      ORDER BY latitude ASC
+      LIMIT 1
+    `)
+
+    const eastResult = await db.execute(`
+      SELECT name, location, country, latitude, longitude
+      FROM campsites
+      ORDER BY longitude DESC
+      LIMIT 1
+    `)
+
+    const westResult = await db.execute(`
+      SELECT name, location, country, latitude, longitude
+      FROM campsites
+      ORDER BY longitude ASC
+      LIMIT 1
+    `)
+
+    const extremeCampsites = {
+      north: northResult.rows[0],
+      south: southResult.rows[0],
+      east: eastResult.rows[0],
+      west: westResult.rows[0],
+    }
+    // 🔼 Ende: Extrempunkte
+
+
     // Final response
     return NextResponse.json({
       totalVisits,
+      extremeCampsites,
+      visitsPerMonth,
+      longestTripBreak,
+      longestStay,
+      longestTrip,
       totalCampsites,
       currentYearVisits,
       currentYearCampsites,
@@ -172,6 +366,10 @@ export async function GET(request: Request) {
       totalNights,
       currentYearNights,
       multiVisitTrips,
+      visitsPerCountry, // 👈 Neue Statistik ergänzt
+
+      multiVisitTripsCurrentYear,
+      mostVisitedCampsites, // 👈 neue Statistik hinzugefügt
       distance: {
         total: totalDistance,
         averagePerTrip: averageDistance,
