@@ -7,10 +7,10 @@ import { motion } from "framer-motion";
 interface CampingCardProps {
   id: string;
   title: string;
-  dateFrom: string; // Neues Feld für das Startdatum
-  dateTo: string; // Neues Feld für das Enddatum
+  dateFrom: string;
+  dateTo: string;
   location: string;
-  country: string; // Neues Feld für das Land
+  country: string;
   image: string;
 }
 
@@ -20,42 +20,42 @@ const DEFAULT_IMAGE_EXTENSION = ".webp";
 export default function CampingCard({
   id,
   title,
-  dateFrom, // Neues Feld für das Startdatum
-  dateTo, // Neues Feld für das Enddatum
+  dateFrom,
+  dateTo,
   location,
-  country, // Neues Feld für das Land
+  country,
   image,
 }: CampingCardProps) {
-  const imageUrl = `${BASE_IMAGE_URL}${image}${DEFAULT_IMAGE_EXTENSION}`; // Baue den Bildpfad direkt
+  const imageUrl = `${BASE_IMAGE_URL}${image}${DEFAULT_IMAGE_EXTENSION}`;
 
   return (
     <Link href={`/besuch/${id}`}>
       <motion.div
-        className="group relative aspect-video w-[300px] cursor-pointer overflow-hidden rounded-lg md:w-[400px]"
+        className="group w-[300px] md:w-[400px] cursor-pointer overflow-hidden rounded-lg"
         whileHover={{ scale: 1.05 }}
         transition={{ duration: 0.2 }}
       >
         <Image
-          src={imageUrl} // Verwende den aufgelösten Bildpfad
-          alt={title || "Camping Image"} // Füge das alt-Attribut hinzu
-          fill
-          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" // Füge das sizes-Attribut hinzu
-          priority // Füge das priority-Attribut hinzu
-          className="object-cover transition-transform duration-500 group-hover:scale-110"
+          src={imageUrl}
+          alt={title || "Camping Image"}
+          width={400}
+          height={225} // 16:9-Verhältnis
+          sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+          priority
+          className="object-cover w-full h-auto transition-transform duration-500 group-hover:scale-110 rounded-lg"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1E2D2F] via-[#1E2D2F]/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-        <div className="absolute bottom-[-40px]  left-0 right-0 p-4 transition-transform duration-300 group-hover:translate-y-[-30%]">
-          <h3 className="text-lg font-bold text-[#A3E7CC]">{title}</h3>{" "}
-          {/* Stelle sicher, dass der Titel hier angezeigt wird */}
+
+        <div className="bg-gradient-to-t from-[#1E2D2F] via-[#1E2D2F]/50 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 absolute top-0 left-0 w-full h-full z-10" />
+
+        <div className="absolute bottom-[-40px] left-0 right-0 p-4 transition-transform duration-300 group-hover:translate-y-[-30%] z-20">
+          <h3 className="text-lg font-bold text-[#A3E7CC]">{title}</h3>
           <div className="mt-1 text-sm text-[#A3E7CC]/70 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <p>
               {dateFrom} - {dateTo}
-            </p>{" "}
-            {/* Anzeige des Datums von bis */}
+            </p>
             <p>
               {location}, {country}
-            </p>{" "}
-            {/* Anzeige des Landes */}
+            </p>
           </div>
         </div>
       </motion.div>
