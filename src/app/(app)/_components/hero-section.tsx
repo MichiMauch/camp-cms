@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Play, Loader } from "lucide-react";
-import Image from "next/image";
 import { motion } from "framer-motion";
 import Link from "next/link";
 import { getImageUrl } from "@/utils/image";
@@ -79,15 +78,13 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
           <Loader className="animate-spin text-[#A3E7CC]" size={48} />
         </div>
       )}
-      <Image
+      <img
         src={getImageUrl(image) || "/placeholder.svg"}
         alt={title}
-        fill
-        className={`object-cover transition-opacity duration-500 ${
+        className={`object-cover w-full h-full absolute top-0 left-0 transition-opacity duration-500 ${
           imageLoading ? "opacity-0" : "opacity-100"
         }`}
-        priority
-        onLoadingComplete={() => setImageLoading(false)}
+        onLoad={() => setImageLoading(false)}
       />
       <div className="absolute inset-0 bg-gradient-to-t from-[#1E2D2F] via-[#1E2D2F]/5 to-transparent" />
 
@@ -117,13 +114,7 @@ export default function HeroSection({ fallbackData }: HeroSectionProps) {
                   Details
                 </Button>
               </Link>
-              {/* <Button
-                    size="lg"
-                    variant="outline"
-                    className="border-[#A3E7CC]/30 bg-[#A3E7CC]/10 text-[#A3E7CC] backdrop-blur-sm hover:bg-[#A3E7CC]/20"
-                    >
-                    Auf der Karte ansehen
-                    </Button> */}
+              {/* Optionaler Button auskommentiert */}
             </div>
           </div>
         </motion.div>
