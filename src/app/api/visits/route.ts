@@ -19,6 +19,7 @@ export async function GET() {
       sql: `
         SELECT 
           v.id AS id,
+          v.campsite_id AS campsiteId,
           strftime('%d.%m.%Y', date(v.date_from)) AS dateFrom,
           strftime('%d.%m.%Y', date(v.date_to)) AS dateTo,
           v.visit_image AS teaserImage,
@@ -32,6 +33,7 @@ export async function GET() {
 
     const visits = result.rows.map((row) => ({
       id: row.id,
+      campsiteId: row.campsiteId,
       dateFrom: row.dateFrom,
       dateTo: row.dateTo,
       campsiteName: row.campsiteName,
