@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import dynamic from "next/dynamic"; // Dynamischer Import für Map
 import MainNav from "../_components/main-nav";
@@ -53,25 +53,38 @@ function VisitedPlacesMap() {
     fetchCampsites();
   }, []);
 
-  const groupedCampsites = campsites.reduce((acc, campsite) => {
+  const groupedCampsites = useMemo(() => campsites.reduce((acc, campsite) => {
     if (!acc[campsite.country]) {
       acc[campsite.country] = [];
     }
     acc[campsite.country].push(campsite);
     return acc;
-  }, {} as Record<string, Campsite[]>);
+  }, {} as Record<string, Campsite[]>), [campsites]);
 
-  const filteredCampsites = selectedCountry
+  const filteredCampsites = useMemo(() => selectedCountry
     ? groupedCampsites[selectedCountry] || []
-    : campsites;
+    : campsites, [selectedCountry, groupedCampsites, campsites]);
 
-  const visitedPlaces = filteredCampsites
-    .filter((campsite) => campsite.latitude && campsite.longitude)
-    .map((campsite) => ({
-      position: [campsite.latitude, campsite.longitude] as [number, number],
-      popup: campsite.name,
-      isHovered: campsite.id === hoveredCampsite,
-    }));
+  const visitedPlaces = useMemo(() => {
+    const places = filteredCampsites
+      .filter((campsite) => campsite.latitude && campsite.longitude)
+      .sort((a, b) => a.location.localeCompare(b.location)) // Same sorting as the list
+      .map((campsite) => ({
+        position: [campsite.latitude, campsite.longitude] as [number, number],
+        popup: campsite.name,
+        isHovered: campsite.id === hoveredCampsite,
+      }));
+    
+    return places;
+  }, [filteredCampsites, hoveredCampsite]);
+
+  const handleMouseEnter = useCallback((campsiteId: number) => {
+    setHoveredCampsite(campsiteId);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setHoveredCampsite(null);
+  }, []);
 
   const defaultCenter: [number, number] = [46.8182, 8.2275];
 
@@ -123,9 +136,9 @@ function VisitedPlacesMap() {
                     .map((campsite) => (
                       <li
                         key={campsite.id}
-                        className="flex items-center space-x-6 mb-4"
-                        onMouseEnter={() => setHoveredCampsite(campsite.id)}
-                        onMouseLeave={() => setHoveredCampsite(null)}
+                        className="flex items-center space-x-6 mb-4 cursor-pointer"
+                        onMouseEnter={() => handleMouseEnter(campsite.id)}
+                        onMouseLeave={handleMouseLeave}
                       >
                         <img
                           src={`${BASE_IMAGE_URL}${campsite.teaser_image}${DEFAULT_IMAGE_EXTENSION}`}

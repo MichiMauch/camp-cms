@@ -1,29 +1,29 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useMemo, useCallback } from "react";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import { cn } from "@/lib/utils";
 
-// Define marker icon to use bus.png from public folder without shadow
+// Define marker icons using SVG from public folder
 const defaultIcon = L.icon({
-  iconUrl: "/bus.png",
-  iconRetinaUrl: "/bus.png",
-  iconSize: [41, 41],
-  iconAnchor: [12, 41],
+  iconUrl: "/bus-stop-blau.svg",
+  iconRetinaUrl: "/bus-stop-blau.svg",
+  iconSize: [35, 35],
+  iconAnchor: [17, 35],
   popupAnchor: [1, -34],
 });
 
 const hoveredIcon = L.icon({
-  iconUrl: "/bus.png",
-  iconRetinaUrl: "/bus.png",
-  iconSize: [50, 50],
-  iconAnchor: [12, 41],
+  iconUrl: "/bus-stop-rot.svg",
+  iconRetinaUrl: "/bus-stop-rot.svg",
+  iconSize: [55, 55],
+  iconAnchor: [27, 55],
   popupAnchor: [1, -34],
 });
 
 interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
-  center: [number, number];
+  center?: [number, number];
   zoom?: number;
   markers?: Array<{
     position: [number, number];
@@ -34,21 +34,24 @@ interface MapProps extends React.HTMLAttributes<HTMLDivElement> {
   draggable?: boolean;
 }
 
-export function Map({
-  center,
-  zoom = 13,
-  markers = [],
-  onMarkerDrag,
-  draggable = false,
-  className,
-  ...props
-}: MapProps) {
+export function Map(props: MapProps) {
+  const {
+    center = [46.8182, 8.2275], // Default center for Switzerland
+    zoom = 13,
+    markers = [],
+    onMarkerDrag,
+    draggable = false,
+    className,
+    ...restProps
+  } = props || {};
   const mapRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const mapId = useRef(`map-${Math.random().toString(36).substr(2, 9)}`);
 
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const map = L.map("map").setView(center, zoom);
+    if (typeof window !== "undefined" && containerRef.current && !mapRef.current) {
+      const map = L.map(containerRef.current).setView(center, zoom);
       mapRef.current = map;
 
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -57,19 +60,26 @@ export function Map({
       }).addTo(map);
 
       return () => {
-        map.remove();
+        if (mapRef.current) {
+          mapRef.current.remove();
+          mapRef.current = null;
+        }
       };
     }
-  }, [center, zoom]);
+  }, []); // Remove dependencies to prevent re-initialization
 
   useEffect(() => {
-    if (mapRef.current) {
-      markersRef.current.forEach((marker) => marker.remove());
-      markersRef.current = markers.map((marker) => {
-        const markerIcon = marker.isHovered ? hoveredIcon : defaultIcon;
+    if (!mapRef.current) return;
 
+    // If marker count changed, recreate all markers
+    if (markersRef.current.length !== markers.length) {
+      // Remove existing markers
+      markersRef.current.forEach((marker) => marker.remove());
+      
+      // Create new markers
+      markersRef.current = markers.map((marker) => {
         const m = L.marker(marker.position, {
-          icon: markerIcon,
+          icon: defaultIcon,
           draggable,
         }).addTo(mapRef.current!);
 
@@ -85,22 +95,26 @@ export function Map({
           });
         }
 
-        if (marker.isHovered) {
-          m.setZIndexOffset(1000);
-        } else {
-          m.setZIndexOffset(0);
-        }
-
         return m;
       });
     }
+
+    // Update existing markers - always apply current hover state
+    markersRef.current.forEach((leafletMarker, index) => {
+      const marker = markers[index];
+      if (marker && leafletMarker) {
+        const newIcon = marker.isHovered ? hoveredIcon : defaultIcon;
+        leafletMarker.setIcon(newIcon);
+        leafletMarker.setZIndexOffset(marker.isHovered ? 1000 : 0);
+      }
+    });
   }, [markers, draggable, onMarkerDrag]);
 
   return (
     <div
-      id="map"
+      ref={containerRef}
       className={cn("h-[400px] rounded-md", className)}
-      {...props}
+      {...restProps}
     />
   );
 }
