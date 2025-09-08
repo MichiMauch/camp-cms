@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/turso"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 export async function GET(request: Request) {
   try {
     // Gesamtkilometer aus der trips Tabelle
@@ -18,25 +21,61 @@ export async function GET(request: Request) {
     const tripCount = Number(tripCountResult.rows[0].count)
     const averageDistance = tripCount > 0 ? Math.round(totalDistance / tripCount) : 0
 
-    // Distanz für das aktuelle Jahr
+    // Distanz für das aktuelle Jahr (mit anteiliger Berechnung für Jahreswechsel-Trips)
     const currentYearDistanceResult = await db.execute({
       sql: `
-        SELECT COALESCE(SUM(total_distance), 0) as total_distance
+        SELECT 
+          COALESCE(SUM(
+            CASE 
+              WHEN strftime('%Y', start_date) = strftime('%Y', end_date) THEN
+                -- Normale Trips: komplette Distanz wenn im aktuellen Jahr
+                CASE WHEN strftime('%Y', start_date) = strftime('%Y', 'now') THEN total_distance ELSE 0 END
+              ELSE
+                -- Jahreswechsel-Trips: anteilige Berechnung
+                CASE WHEN strftime('%Y', start_date) = strftime('%Y', 'now') THEN
+                  -- Anteil im Start-Jahr
+                  CAST(total_distance * (
+                    (julianday(strftime('%Y', start_date) || '-12-31') - julianday(start_date) + 1) /
+                    (julianday(end_date) - julianday(start_date) + 1)
+                  ) AS INTEGER)
+                WHEN strftime('%Y', end_date) = strftime('%Y', 'now') THEN
+                  -- Anteil im End-Jahr  
+                  CAST(total_distance * (
+                    (julianday(end_date) - julianday(strftime('%Y', end_date) || '-01-01') + 1) /
+                    (julianday(end_date) - julianday(start_date) + 1)
+                  ) AS INTEGER)
+                ELSE 0 END
+            END
+          ), 0) as total_distance
         FROM trips
-        WHERE strftime('%Y', date(start_date)) = strftime('%Y', 'now')
-        OR strftime('%Y', date(end_date)) = strftime('%Y', 'now')
       `,
       args: [],
     })
     const currentYearDistance = Number(currentYearDistanceResult.rows[0].total_distance)
 
-    // Anzahl der Trips im aktuellen Jahr
+    // Anzahl der Trips im aktuellen Jahr (anteilig für Jahreswechsel-Trips)
     const currentYearTripsResult = await db.execute({
       sql: `
-        SELECT COUNT(*) as count
+        SELECT 
+          COALESCE(SUM(
+            CASE 
+              WHEN strftime('%Y', start_date) = strftime('%Y', end_date) THEN
+                -- Normale Trips: 1 wenn im aktuellen Jahr
+                CASE WHEN strftime('%Y', start_date) = strftime('%Y', 'now') THEN 1 ELSE 0 END
+              ELSE
+                -- Jahreswechsel-Trips: anteilig nach Tagen
+                CASE WHEN strftime('%Y', start_date) = strftime('%Y', 'now') THEN
+                  -- Anteil im Start-Jahr
+                  (julianday(strftime('%Y', start_date) || '-12-31') - julianday(start_date) + 1) /
+                  (julianday(end_date) - julianday(start_date) + 1)
+                WHEN strftime('%Y', end_date) = strftime('%Y', 'now') THEN
+                  -- Anteil im End-Jahr
+                  (julianday(end_date) - julianday(strftime('%Y', end_date) || '-01-01') + 1) /
+                  (julianday(end_date) - julianday(start_date) + 1)
+                ELSE 0 END
+            END
+          ), 0) as count
         FROM trips
-        WHERE strftime('%Y', date(start_date)) = strftime('%Y', 'now')
-        OR strftime('%Y', date(end_date)) = strftime('%Y', 'now')
       `,
       args: [],
     })
@@ -129,14 +168,50 @@ export async function GET(request: Request) {
     })
     const allCampsites = allCampsitesResult.rows
 
-    // Kilometer pro Jahr
+    // Kilometer pro Jahr (mit anteiliger Berechnung für Jahreswechsel-Trips)
     const yearlyDistanceResult = await db.execute({
       sql: `
+        WITH year_splits AS (
+          SELECT 
+            trip_id,
+            year,
+            distance_share
+          FROM (
+            -- Für jeden Trip: generiere Einträge für jedes Jahr, das er berührt
+            SELECT 
+              id as trip_id,
+              strftime('%Y', start_date) as year,
+              CASE 
+                WHEN strftime('%Y', start_date) = strftime('%Y', end_date) THEN 
+                  total_distance
+                ELSE 
+                  -- Start-Jahr Anteil
+                  CAST(total_distance * (
+                    (julianday(strftime('%Y', start_date) || '-12-31') - julianday(start_date) + 1) /
+                    (julianday(end_date) - julianday(start_date) + 1)
+                  ) AS INTEGER)
+              END as distance_share
+            FROM trips
+            
+            UNION ALL
+            
+            -- End-Jahr für Jahreswechsel-Trips
+            SELECT 
+              id as trip_id,
+              strftime('%Y', end_date) as year,
+              CAST(total_distance * (
+                (julianday(end_date) - julianday(strftime('%Y', end_date) || '-01-01') + 1) /
+                (julianday(end_date) - julianday(start_date) + 1)
+              ) AS INTEGER) as distance_share
+            FROM trips
+            WHERE strftime('%Y', start_date) != strftime('%Y', end_date)
+          )
+        )
         SELECT 
-          strftime('%Y', start_date) as year,
-          COALESCE(SUM(total_distance), 0) as total_distance
-        FROM trips
-        GROUP BY strftime('%Y', start_date)
+          year,
+          COALESCE(SUM(distance_share), 0) as total_distance
+        FROM year_splits
+        GROUP BY year
         ORDER BY year DESC
       `,
       args: [],
@@ -144,6 +219,39 @@ export async function GET(request: Request) {
     const yearlyDistances = yearlyDistanceResult.rows.map((row) => ({
       year: row.year,
       kilometers: Number(row.total_distance),
+    }))
+
+    // Ausflüge pro Jahr (mit Jahreswechsel-Trips zu beiden Jahren gezählt)
+    const yearlyTripCountResult = await db.execute({
+      sql: `
+        WITH trip_years AS (
+          -- Alle Trips zu ihrem Start-Jahr
+          SELECT 
+            id, 
+            strftime('%Y', start_date) as year
+          FROM trips
+          
+          UNION
+          
+          -- Jahreswechsel-Trips zusätzlich zu ihrem End-Jahr
+          SELECT 
+            id, 
+            strftime('%Y', end_date) as year
+          FROM trips
+          WHERE strftime('%Y', start_date) != strftime('%Y', end_date)
+        )
+        SELECT 
+          year,
+          COUNT(*) as trip_count
+        FROM trip_years
+        GROUP BY year
+        ORDER BY year DESC
+      `,
+      args: [],
+    })
+    const yearlyTripCounts = yearlyTripCountResult.rows.map((row) => ({
+      year: row.year,
+      trips: Number(row.trip_count),
     }))
 
     // Neue Abfrage: Trips mit mehreren Besuchen
@@ -351,7 +459,7 @@ export async function GET(request: Request) {
     // 🔼 Ende: Extrempunkte
 
 
-    // Final response
+    // Final response with no-cache headers
     return NextResponse.json({
       totalVisits,
       extremeCampsites,
@@ -379,6 +487,13 @@ export async function GET(request: Request) {
         },
       },
       yearlyDistances,
+      yearlyTripCounts,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     })
   } catch (error) {
     console.error("Error in route handler:", error)

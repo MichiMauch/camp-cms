@@ -78,6 +78,7 @@ export default function CampingStatistics() {
       visitCount: number;
     };
     yearlyDistances: Array<{ year: string; kilometers: number }>;
+    yearlyTripCounts: Array<{ year: string; trips: number }>;
     distance: {
       total: number;
       averagePerTrip: number;
@@ -106,6 +107,7 @@ export default function CampingStatistics() {
     longestStay: { name: "", location: "", country: "", duration: 0 },
     mostVisitedCampsites: [],
     yearlyDistances: [],
+    yearlyTripCounts: [],
     visitsPerCountry: [],
     longestTrip: { distance: 0, visitCount: 0 },
     distance: {
@@ -120,8 +122,12 @@ export default function CampingStatistics() {
 
   useEffect(() => {
     async function fetchData() {
-      const response = await fetch("/api/stats", {
+      const response = await fetch(`/api/stats?t=${Date.now()}`, {
         cache: "no-store",
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
       });
       const data = (await response.json()) as {
         totalVisits: number;
@@ -190,6 +196,7 @@ export default function CampingStatistics() {
         };
 
         yearlyDistances: Array<{ year: string; kilometers: number }>;
+        yearlyTripCounts: Array<{ year: string; trips: number }>;
         distance: {
           total: number;
           averagePerTrip: number;
@@ -347,7 +354,7 @@ export default function CampingStatistics() {
           </Card>
         </div>
         {/* Jahresstatistiken */}
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="grid gap-6 md:grid-cols-3">
           {/* Kilometer pro Jahr */}
           <Card>
             <CardHeader>
@@ -373,6 +380,39 @@ export default function CampingStatistics() {
                     <Bar
                       dataKey="kilometers"
                       fill="var(--color-kilometers)"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+
+          {/* Ausflüge pro Jahr */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Ausflüge pro Jahr</CardTitle>
+              <CardDescription>Anzahl Wohnmobil-Trips pro Jahr</CardDescription>
+            </CardHeader>
+            <CardContent className="overflow-hidden">
+              <ChartContainer
+                config={{
+                  trips: {
+                    label: "Ausflüge",
+                    color: "hsl(var(--chart-2))",
+                  },
+                }}
+                className="w-full h-[200px]"
+              >
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={stats.yearlyTripCounts}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="year" />
+                    <YAxis />
+                    <ChartTooltip content={<ChartTooltipContent />} />
+                    <Bar
+                      dataKey="trips"
+                      fill="var(--color-trips)"
                       radius={[4, 4, 0, 0]}
                     />
                   </BarChart>
