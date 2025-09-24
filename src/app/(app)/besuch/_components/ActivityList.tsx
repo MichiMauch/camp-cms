@@ -191,12 +191,12 @@ const ActivityList: React.FC<{ latitude: number; longitude: number }> = ({
       if (!response.ok) {
         throw new Error("Failed to fetch location");
       }
-      const data: any[] = await response.json();
+      const data: any = await response.json();
       console.log("Fetched location data from Nominatim API:", data); // Debug log
       const location =
-        data[0]?.address?.city ||
-        data[0]?.address?.town ||
-        data[0]?.address?.village ||
+        data?.address?.city ||
+        data?.address?.town ||
+        data?.address?.village ||
         "Unbekannter Ort";
       localStorage.setItem(cacheKey, JSON.stringify(location.toUpperCase()));
       return location.toUpperCase();
