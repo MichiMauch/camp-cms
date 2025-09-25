@@ -28,55 +28,15 @@ async function findExistingTrip(date: string) {
 async function calculateTripDistance(visits: Visit[]) {
   if (!visits || visits.length === 0) return 0
 
-  const HOME_COORDINATES = [8.05558, 47.33243] // [longitude, latitude]
-  let totalDistance = 0
+  // Sortiere Besuche nach Datum
+  const sortedVisits = [...visits].sort((a, b) =>
+    new Date(a.date_from).getTime() - new Date(b.date_from).getTime()
+  )
 
-  // Calculate route: Home -> First Campsite
-  let coordinates = [HOME_COORDINATES, [visits[0].longitude, visits[0].latitude]]
-  let distance = await calculateTotalDistance([
-    {
-      id: 0,
-      date_from: "",
-      date_to: "",
-      campsite_id: 0,
-      latitude: visits[0].latitude,
-      longitude: visits[0].longitude,
-    },
-  ])
-  totalDistance += distance.total_distance_km
+  // Verwende die calculateTotalDistance Funktion korrekt mit allen Besuchen
+  const distance = await calculateTotalDistance(sortedVisits)
 
-  // Calculate routes between consecutive campsites
-  for (let i = 0; i < visits.length - 1; i++) {
-    const currentVisit = visits[i]
-    const nextVisit = visits[i + 1]
-    distance = await calculateTotalDistance([
-      {
-        id: 0,
-        date_from: "",
-        date_to: "",
-        campsite_id: 0,
-        latitude: nextVisit.latitude,
-        longitude: nextVisit.longitude,
-      },
-    ])
-    totalDistance += distance.total_distance_km
-  }
-
-  // Calculate route: Last Campsite -> Home
-  coordinates = [[visits[visits.length - 1].longitude, visits[visits.length - 1].latitude], HOME_COORDINATES]
-  distance = await calculateTotalDistance([
-    {
-      id: 0,
-      date_from: "",
-      date_to: "",
-      campsite_id: 0,
-      latitude: HOME_COORDINATES[1],
-      longitude: HOME_COORDINATES[0],
-    },
-  ])
-  totalDistance += distance.total_distance_km
-
-  return Math.round(totalDistance)
+  return distance.total_distance_km
 }
 
 export async function handleVisitCreation(newVisit: Visit) {

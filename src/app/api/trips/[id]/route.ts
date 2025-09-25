@@ -27,20 +27,20 @@ export async function GET(request: Request, { params }: { params: { id: string }
           LEFT JOIN campsites c ON v.campsite_id = c.id
           WHERE t.id = ?
         )
-        SELECT 
+        SELECT
           id,
           name,
           start_date,
           end_date,
           total_distance,
-          GROUP_CONCAT(visit_id) as visit_ids, -- Stelle sicher, dass visit_ids abgefragt wird
-          GROUP_CONCAT(campsite_name) as campsite_names,
-          GROUP_CONCAT(location) as campsite_locations,
-          GROUP_CONCAT(visit_date) as visit_dates,
-          GROUP_CONCAT(latitude) as latitudes,
-          GROUP_CONCAT(longitude) as longitudes,
-          GROUP_CONCAT(campsite_id) as campsite_ids,
-          GROUP_CONCAT(teaser_image) as teaser_images -- Füge die teaser_image-Spalte hinzu
+          GROUP_CONCAT(visit_id, '|') as visit_ids, -- Stelle sicher, dass visit_ids abgefragt wird
+          GROUP_CONCAT(campsite_name, '|') as campsite_names,
+          GROUP_CONCAT(location, '|') as campsite_locations,
+          GROUP_CONCAT(visit_date, '|') as visit_dates,
+          GROUP_CONCAT(latitude, '|') as latitudes,
+          GROUP_CONCAT(longitude, '|') as longitudes,
+          GROUP_CONCAT(campsite_id, '|') as campsite_ids,
+          GROUP_CONCAT(teaser_image, '|') as teaser_images -- Füge die teaser_image-Spalte hinzu
         FROM TripVisits
         GROUP BY id
       `,
@@ -54,13 +54,14 @@ export async function GET(request: Request, { params }: { params: { id: string }
     const row = tripResult.rows[0]
 
     // Erstelle Arrays aus den zusammengefügten Strings
-    const visitIds = row.visit_ids ? String(row.visit_ids).split(",") : []
-    const campsiteNames = row.campsite_names ? String(row.campsite_names).split(",") : []
-    const visitDates = row.visit_dates ? String(row.visit_dates).split(",") : []
-    const latitudes = row.latitudes ? String(row.latitudes).split(",").map(Number) : []
-    const longitudes = row.longitudes ? String(row.longitudes).split(",").map(Number) : []
-    const campsiteIds = row.campsite_ids ? String(row.campsite_ids).split(",") : []
-    const teaserImages = row.teaser_images ? String(row.teaser_images).split(",") : []
+    const visitIds = row.visit_ids ? String(row.visit_ids).split("|") : []
+    const campsiteNames = row.campsite_names ? String(row.campsite_names).split("|") : []
+    const campsiteLocations = row.campsite_locations ? String(row.campsite_locations).split("|") : []
+    const visitDates = row.visit_dates ? String(row.visit_dates).split("|") : []
+    const latitudes = row.latitudes ? String(row.latitudes).split("|").map(Number) : []
+    const longitudes = row.longitudes ? String(row.longitudes).split("|").map(Number) : []
+    const campsiteIds = row.campsite_ids ? String(row.campsite_ids).split("|") : []
+    const teaserImages = row.teaser_images ? String(row.teaser_images).split("|") : []
 
     const trip = {
       id: row.id,
@@ -72,7 +73,7 @@ export async function GET(request: Request, { params }: { params: { id: string }
         .map((_, index) => ({
           id: campsiteIds[index],
           name: campsiteNames[index],
-          location: String(row.campsite_locations).split(",")[index], // Füge die Location hinzu
+          location: campsiteLocations[index], // Füge die Location hinzu
           date: visitDates[index],
           latitude: latitudes[index],
           longitude: longitudes[index],
