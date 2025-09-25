@@ -291,7 +291,7 @@ export function VisitForm({
 
       <SaveDataButton
         exifData={localExifData}
-        endDate={endDate.toISOString().split("T")[0]}
+        endDate={`${endDate.getFullYear()}-${String(endDate.getMonth() + 1).padStart(2, "0")}-${String(endDate.getDate()).padStart(2, "0")}`}
         fileName={fileName}
         imageFile={imageFile}
         setError={setError}
