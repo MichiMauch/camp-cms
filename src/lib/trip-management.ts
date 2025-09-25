@@ -1,8 +1,7 @@
 import { db } from "@/lib/turso"
-import { calculateTotalDistance } from "./openroute-service"
+import { calculateTotalDistance, Visit } from "./openroute-service"
 
-interface Visit {
-  id?: number
+interface NewVisit {
   date_from: string
   date_to: string
   campsite_id: number
@@ -39,7 +38,7 @@ async function calculateTripDistance(visits: Visit[]) {
   return distance.total_distance_km
 }
 
-export async function handleVisitCreation(newVisit: Visit) {
+export async function handleVisitCreation(newVisit: NewVisit) {
   try {
     // Prüfe, ob es einen passenden Trip gibt
     const existingTrip = await findExistingTrip(newVisit.date_from)
@@ -70,14 +69,21 @@ export async function handleVisitCreation(newVisit: Visit) {
       // Füge den neuen Besuch hinzu
       const allVisits = [
         ...tripVisits.rows.map(row => ({
-          id: row.id,
-          date_from: row.date_from,
-          date_to: row.date_to,
-          campsite_id: row.campsite_id,
-          latitude: row.latitude,
-          longitude: row.longitude,
+          id: row.id as number,
+          date_from: row.date_from as string,
+          date_to: row.date_to as string,
+          campsite_id: row.campsite_id as number,
+          latitude: row.latitude as number,
+          longitude: row.longitude as number,
         } as Visit)),
-        newVisit
+        {
+          id: 0, // Temporäre ID für neuen Besuch
+          date_from: newVisit.date_from,
+          date_to: newVisit.date_to,
+          campsite_id: newVisit.campsite_id,
+          latitude: newVisit.latitude,
+          longitude: newVisit.longitude,
+        } as Visit
       ]
 
       // Berechne neue Gesamtdistanz nur für diesen Trip
@@ -95,7 +101,15 @@ export async function handleVisitCreation(newVisit: Visit) {
       })
     } else {
       // Erstelle neuen Trip nur für diesen Besuch
-      const totalDistance = await calculateTripDistance([newVisit])
+      const newVisitWithId: Visit = {
+        id: 0, // Temporäre ID
+        date_from: newVisit.date_from,
+        date_to: newVisit.date_to,
+        campsite_id: newVisit.campsite_id,
+        latitude: newVisit.latitude,
+        longitude: newVisit.longitude,
+      }
+      const totalDistance = await calculateTripDistance([newVisitWithId])
 
       const result = await db.execute({
         sql: `
@@ -174,13 +188,13 @@ export async function handleVisitDeletion(visitId: number) {
 
         const totalDistance = await calculateTripDistance(
           remainingVisits.rows.map(row => ({
-            id: row.id,
-            date_from: row.date_from,
-            date_to: row.date_to,
-            campsite_id: row.campsite_id,
-            latitude: row.latitude,
-            longitude: row.longitude,
-          })) as Visit[]
+            id: row.id as number,
+            date_from: row.date_from as string,
+            date_to: row.date_to as string,
+            campsite_id: row.campsite_id as number,
+            latitude: row.latitude as number,
+            longitude: row.longitude as number,
+          } as Visit))
         )
 
         await db.execute({
