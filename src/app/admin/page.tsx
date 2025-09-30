@@ -34,6 +34,18 @@ export default async function Admin() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <TotalVisits />
         <TotalVisitedPlaces />
+        <div className="md:col-span-2">
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-lg shadow-lg">
+            <h3 className="text-lg font-semibold mb-2">🧠 AI Trip Planner</h3>
+            <p className="text-blue-100 mb-4">Plan your next adventure with AI assistance</p>
+            <a
+              href="/admin/trip-planner"
+              className="inline-flex items-center px-4 py-2 bg-white text-blue-600 rounded-md hover:bg-blue-50 transition-colors font-medium"
+            >
+              ✨ Plan Trip to Czech Republic
+            </a>
+          </div>
+        </div>
       </div>
 
       <VisitedPlacesMap />
