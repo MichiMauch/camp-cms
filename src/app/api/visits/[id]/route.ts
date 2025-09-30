@@ -69,7 +69,22 @@ export async function PUT(
       );
     }
 
-    // Dates should already be in YYYY-MM-DD format
+    // Hole die Trip-ID für diesen Visit
+    const tripQuery = await db.execute({
+      sql: "SELECT trip_id FROM visits WHERE id = ?",
+      args: [id],
+    });
+
+    if (tripQuery.rows.length === 0) {
+      return NextResponse.json(
+        { error: "Visit not found" },
+        { status: 404 }
+      );
+    }
+
+    const tripId = tripQuery.rows[0].trip_id;
+
+    // Update den Visit
     await db.execute({
       sql: `
         UPDATE visits
@@ -78,6 +93,33 @@ export async function PUT(
       `,
       args: [dateFrom, dateTo, visitImage || null, id],
     });
+
+    // Wenn der Visit zu einem Trip gehört, aktualisiere die Trip-Daten
+    if (tripId) {
+      // Hole alle Visits für diesen Trip und berechne neue Start/End Daten
+      const allVisitsQuery = await db.execute({
+        sql: `
+          SELECT MIN(date_from) as earliest_start, MAX(date_to) as latest_end
+          FROM visits
+          WHERE trip_id = ?
+        `,
+        args: [tripId],
+      });
+
+      if (allVisitsQuery.rows.length > 0) {
+        const { earliest_start, latest_end } = allVisitsQuery.rows[0];
+
+        // Update die Trip-Daten
+        await db.execute({
+          sql: `
+            UPDATE trips
+            SET start_date = ?, end_date = ?
+            WHERE id = ?
+          `,
+          args: [earliest_start, latest_end, tripId],
+        });
+      }
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {
