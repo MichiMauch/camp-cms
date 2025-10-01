@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/turso"
-import { handleVisitCreation } from "@/lib/trip-management"
 
 // Hilfsfunktion zur Datumsformatierung
 function formatDateForDB(dateStr: string) {
@@ -168,40 +167,22 @@ export async function POST(request: Request) {
       fileName,
     })
 
-    // Hole die Campsite-Daten für die Koordinaten
-    const campsiteData = await db.execute({
-      sql: "SELECT latitude, longitude FROM campsites WHERE id = ?",
-      args: [finalCampsiteId],
-    })
-
-    if (campsiteData.rows.length === 0) {
-      throw new Error("Campsite not found")
-    }
-
-    const { latitude, longitude } = campsiteData.rows[0]
-
-    // Verwende handleVisitCreation für die korrekte Trip-Zuordnung
-    await handleVisitCreation({
-      date_from: formattedStartDate,
-      date_to: formattedEndDate,
-      campsite_id: Number(finalCampsiteId),
-      latitude: Number(latitude),
-      longitude: Number(longitude),
-    })
-
-    // Zusätzlich noch das visit_image updaten
     await db.execute({
       sql: `
-        UPDATE visits
-        SET visit_image = ?
-        WHERE campsite_id = ? AND date_from = ? AND date_to = ?
+        INSERT INTO visits (
+          campsite_id, 
+          date_from, 
+          date_to, 
+          visit_image
+        )
+        VALUES (?, ?, ?, ?)
       `,
-      args: [fileName, finalCampsiteId, formattedStartDate, formattedEndDate],
+      args: [finalCampsiteId, formattedStartDate, formattedEndDate, fileName],
     })
 
     return NextResponse.json({
       success: true,
-      message: "Besuch wurde erfolgreich gespeichert und Trip zugeordnet",
+      message: "Besuch wurde erfolgreich gespeichert",
     })
   } catch (error) {
     console.error("Detailed error:", error)

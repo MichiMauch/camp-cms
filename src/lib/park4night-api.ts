@@ -32,7 +32,7 @@ interface Park4NightSearchParams {
 }
 
 class Park4NightAPI {
-  private baseUrl = 'https://api.park4night.com/api'
+  private baseUrl = 'https://guest.park4night.com/services/V4.1'
   private apiKey: string | null = null
 
   constructor(apiKey?: string) {
@@ -78,19 +78,40 @@ class Park4NightAPI {
 
   async searchPlaces(params: Park4NightSearchParams): Promise<Park4NightPlace[]> {
     try {
-      const response = await this.makeRequest('/places/search', {
-        country: params.country,
-        lat: params.latitude,
-        lng: params.longitude,
-        radius: params.radius || 50,
-        type: params.type || 'all',
-        min_rating: params.min_rating || 3,
-        max_price: params.max_price,
-        amenities: params.amenities?.join(','),
+      // Park4Night API uses lieuxGetFilter.php endpoint
+      const response = await this.makeRequest('/lieuxGetFilter.php', {
+        latitude: params.latitude,
+        longitude: params.longitude,
+        rayon: params.radius || 50, // rayon = radius in French
         limit: params.limit || 100
       })
 
-      return this.transformPlaces((response as any).places || (response as any).data || [])
+      // console.log('Park4Night Raw Response:', JSON.stringify(response, null, 2))
+
+      // Handle different response formats
+      let places = []
+      if (Array.isArray(response)) {
+        places = response
+      } else if (response && (response as any).data && Array.isArray((response as any).data)) {
+        places = (response as any).data
+      } else if (response && (response as any).places && Array.isArray((response as any).places)) {
+        places = (response as any).places
+      } else if (response && (response as any).results && Array.isArray((response as any).results)) {
+        places = (response as any).results
+      } else {
+        console.warn('Unknown Park4Night response format:', response)
+        places = []
+      }
+
+      console.log(`Found ${places.length} places from Park4Night`)
+      const transformedPlaces = this.transformPlaces(places)
+      console.log(`Transformed ${transformedPlaces.length} places successfully`)
+
+      if (transformedPlaces.length === 0 && places.length > 0) {
+        console.error('Transformation failed! Raw places:', places[0])
+      }
+
+      return transformedPlaces
     } catch (error) {
       console.error('Error searching places:', error)
       return []
@@ -99,8 +120,9 @@ class Park4NightAPI {
 
   async getPlaceDetails(placeId: number): Promise<Park4NightPlace | null> {
     try {
-      const response = await this.makeRequest(`/places/${placeId}`)
-      return this.transformPlace((response as any).place || (response as any).data)
+      // Not implementing individual place details for now
+      // as the searchPlaces already returns detailed data
+      return null
     } catch (error) {
       console.error('Error getting place details:', error)
       return null
@@ -122,22 +144,23 @@ class Park4NightAPI {
     if (!place) return null
 
     try {
+      // Handle Park4Night specific field names
       return {
-        id: place.id || place.place_id,
-        name: place.name || place.title || 'Unnamed Place',
-        latitude: parseFloat(place.latitude || place.lat),
-        longitude: parseFloat(place.longitude || place.lng),
-        country: place.country || place.country_code,
-        rating: parseFloat(place.rating || place.average_rating || 0),
-        price: parseFloat(place.price || place.cost || 0),
-        type: place.type || place.category || 'unknown',
-        amenities: this.parseAmenities(place.amenities || place.services || []),
-        description: place.description || place.comment || '',
-        photos: this.parsePhotos(place.photos || place.images || []),
-        address: place.address || place.full_address || '',
-        phone: place.phone || place.telephone,
-        website: place.website || place.url,
-        opening_hours: place.opening_hours || place.hours
+        id: parseInt(place.id || place.lieu_id),
+        name: place.titre || place.nom || place.name || 'Camping Place',
+        latitude: parseFloat(place.latitude),
+        longitude: parseFloat(place.longitude),
+        country: place.pays || place.country || 'Unknown',
+        rating: parseFloat(place.note_moyenne || place.note || place.rating || 3),
+        price: this.parsePrice(place.prix_stationnement || place.prix || place.price || 'gratuit'),
+        type: place.code || place.type || 'camping',
+        amenities: this.parseAmenities(place),
+        description: place.description_en || place.description_fr || place.description_de || place.description || '',
+        photos: this.parsePhotos(place.photos || []),
+        address: `${place.ville || ''}, ${place.code_postal || ''}`.trim(),
+        phone: place.tel || place.telephone || place.phone,
+        website: place.site_internet || place.site_web || place.website,
+        opening_hours: place.date_fermeture || place.horaires || place.opening_hours
       }
     } catch (error) {
       console.error('Error transforming place:', error, place)
@@ -145,14 +168,33 @@ class Park4NightAPI {
     }
   }
 
-  private parseAmenities(amenities: any): string[] {
-    if (Array.isArray(amenities)) {
-      return amenities.map(a => typeof a === 'string' ? a : a.name || a.type).filter(Boolean)
-    }
-    if (typeof amenities === 'string') {
-      return amenities.split(',').map(a => a.trim()).filter(Boolean)
-    }
-    return []
+  private parsePrice(priceStr: string | number): number {
+    if (typeof priceStr === 'number') return priceStr
+    if (!priceStr || priceStr === 'gratuit' || priceStr === 'no') return 0
+
+    // Extract number from string like "60 CZK at day time"
+    const match = priceStr.toString().match(/(\d+)/)
+    return match ? parseInt(match[1]) : 20 // Default reasonable price
+  }
+
+  private parseAmenities(place: any): string[] {
+    const amenities: string[] = []
+
+    // Parse Park4Night amenities from boolean fields
+    if (place.electricite === '1') amenities.push('Electricity')
+    if (place.point_eau === '1') amenities.push('Water')
+    if (place.wifi === '1') amenities.push('WiFi')
+    if (place.douche === '1') amenities.push('Shower')
+    if (place.wc_public === '1') amenities.push('Toilet')
+    if (place.poubelle === '1') amenities.push('Waste Disposal')
+    if (place.laverie === '1') amenities.push('Laundry')
+    if (place.piscine === '1') amenities.push('Pool')
+    if (place.jeux_enfants === '1') amenities.push('Playground')
+    if (place.animaux === '1') amenities.push('Pets Allowed')
+    if (place.boulangerie === '1') amenities.push('Bakery')
+    if (place.gaz === '1') amenities.push('Gas')
+
+    return amenities.length > 0 ? amenities : ['Basic facilities']
   }
 
   private parsePhotos(photos: any): string[] {

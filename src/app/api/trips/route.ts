@@ -46,7 +46,7 @@ export async function GET(request: Request) {
       name: trip.name,
       start_date: trip.start_date,
       end_date: trip.end_date,
-      total_distance: Number(trip.total_distance),
+      total_distance: trip.total_distance ? Number(trip.total_distance) : 0,
       visit_count: Number(trip.visit_count),
       campsite_names: String(trip.campsite_names || "").split(",").join("||"),
       visit_dates: String(trip.visit_dates || "").split(",").join("||"),

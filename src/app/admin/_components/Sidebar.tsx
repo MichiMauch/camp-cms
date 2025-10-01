@@ -16,7 +16,7 @@ import {
   XMarkIcon,
   UserCircleIcon,
 } from "@heroicons/react/24/outline";
-import { Calendar, Tent, LogOut } from "lucide-react";
+import { Calendar, Tent, LogOut, Globe } from "lucide-react";
 
 type NavigationItem = {
   name: string;
@@ -77,6 +77,12 @@ const navigation: NavigationSection[] = [
         name: "Plätze",
         href: "/admin/campsites",
         icon: Tent,
+        current: false,
+      },
+      {
+        name: "Orte Entdecken",
+        href: "/admin/places",
+        icon: Globe,
         current: false,
       },
       {
