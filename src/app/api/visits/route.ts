@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/turso"
 
+export const dynamic = "force-dynamic"
+export const revalidate = 0
+
 // Hilfsfunktion zur Datumsformatierung
 function formatDateForDB(dateStr: string) {
   try {
@@ -116,25 +119,29 @@ export async function POST(request: Request) {
         finalCampsiteId = existingCampsite.rows[0].id as string
         console.log("Found existing campsite:", finalCampsiteId)
       } else {
+        // Sanitize teaser_image fileName: replace spaces with underscores
+        const sanitizedTeaserImage = fileName ? fileName.replace(/\s+/g, '_') : null
+
         console.log("Creating new campsite with data:", {
           name: exifData.address.tourism,
           location: exifData.address.village,
           country: exifData.address.country,
           country_code: exifData.address.country_code,
           iso_alpha3,
+          teaserImage: sanitizedTeaserImage,
         })
 
         const newCampsite = await db.execute({
           sql: `
             INSERT INTO campsites (
-              name, 
-              location, 
-              teaser_image, 
-              latitude, 
-              longitude, 
-              country, 
-              state, 
-              country_code, 
+              name,
+              location,
+              teaser_image,
+              latitude,
+              longitude,
+              country,
+              state,
+              country_code,
               altitude,
               iso_alpha3
             )
@@ -144,7 +151,7 @@ export async function POST(request: Request) {
           args: [
             exifData.address.tourism,
             exifData.address.village,
-            fileName,
+            sanitizedTeaserImage,
             exifData.latitude,
             exifData.longitude,
             exifData.address.country,
@@ -160,24 +167,27 @@ export async function POST(request: Request) {
       }
     }
 
+    // Sanitize fileName: replace spaces with underscores
+    const sanitizedFileName = fileName ? fileName.replace(/\s+/g, '_') : null
+
     console.log("Inserting visit with data:", {
       campsiteId: finalCampsiteId,
       dateFrom: formattedStartDate,
       dateTo: formattedEndDate,
-      fileName,
+      fileName: sanitizedFileName,
     })
 
     await db.execute({
       sql: `
         INSERT INTO visits (
-          campsite_id, 
-          date_from, 
-          date_to, 
+          campsite_id,
+          date_from,
+          date_to,
           visit_image
         )
         VALUES (?, ?, ?, ?)
       `,
-      args: [finalCampsiteId, formattedStartDate, formattedEndDate, fileName],
+      args: [finalCampsiteId, formattedStartDate, formattedEndDate, sanitizedFileName],
     })
 
     return NextResponse.json({
