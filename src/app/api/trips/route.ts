@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server"
 import { db } from "@/lib/turso"
 
+export const dynamic = "force-dynamic"
+
 export async function GET(request: Request) {
   try {
     const tripsResult = await db.execute({
